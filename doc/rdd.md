@@ -107,6 +107,23 @@
 
 ## 画面設計書
 
+### ディレクトリ構成
+```
+/src
+  /components  # UIコンポーネント
+  /layouts     # 共通レイアウト
+  /pages       # ページ
+  /hooks       # カスタムフック
+  /lib         # Supabase設定、共通関数
+  /types       # 型定義
+  /app         # ルーティング
+  /public      # 静的ファイル
+  /test-supabase # Supabase接続テスト用ページ
+  /types       # 型定義
+  /utils       # 汎用ユーティリティ
+  /styles      # グローバルCSS（Tailwind）
+```
+
 ### 保護者ログイン画面
 
 /user/login/
