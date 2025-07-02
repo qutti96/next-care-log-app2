@@ -1,0 +1,32 @@
+{
+  "cSpell.words": [
+    "supabase",
+    "nextjs",
+    "tailwindcss",
+    "postcss",
+    "autoprefixer",
+    "eslint",
+    "typescript",
+    "tsconfig",
+    "middleware",
+    "ssr",
+    "rls",
+    "anon",
+    "cuid",
+    "uuid",
+    "bcrypt",
+    "jwt",
+    "oauth",
+    "cors",
+    "api",
+    "endpoint",
+    "endpoints",
+    "env",
+    "envs",
+    "envfile",
+    "envlocal",
+    "envvars",
+    "envvariable",
+    "envvariables"
+  ]
+} 
