@@ -135,6 +135,7 @@ erDiagram
   Classes {
     int id PK "クラスID"
     string name "クラス名"
+    int facilityId FK "施設ID：Facilities.id"  // 外部キーを明記することで属性の完全性が向上
   }
   Managers {
     int id PK "管理者ID"
