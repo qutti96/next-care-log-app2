@@ -1,6 +1,6 @@
 # ER図（Markdown形式）
 
-## User
+## Users
 
 - id (PK)
 - name
@@ -8,56 +8,58 @@
 - email (UNIQUE)
 - password
 - photoUrl
-- children → [Child]
-- posts → [Post]
+- children → [Children]
+- posts → [Posts]
 
-## Child
+## Children
 
 - id (PK)
-- parentId (FK → User.id)
+- parentId (FK → Users.id)
 - name
 - nameKana
 - birthday
+- classId (FK → Classes.id)
 - allergens
-- milk
+- milk_amount
+- milk_interval
 - photoUrl
-- posts → [Post]
+- posts → [Posts]
 
-## Facility
-
-- id (PK)
-- name
-- classes → [Class]
-- managers → [Manager]
-- staff → [Staff]
-
-## Class
+## Facilities
 
 - id (PK)
 - name
-- facilityId (FK → Facility.id)
-- staff → [Staff]
+- classes → [Classes]
+- managers → [Managers]
+- staff → [Staffs]
 
-## Manager
+## Classes
 
 - id (PK)
 - name
-- email (UNIQUE)
-- facilityId (FK → Facility.id)
+- facilityId (FK → Facilities.id)
+- staff → [Staffs]
 
-## Staff
+## Managers
 
 - id (PK)
 - name
 - email (UNIQUE)
-- facilityId (FK → Facility.id)
-- classId (FK → Class.id)
+- facilityId (FK → Facilities.id)
 
-## Post
+## Staffs
 
 - id (PK)
-- childId (FK → Child.id)
-- parentId (FK → User.id)
+- name
+- email (UNIQUE)
+- facilityId (FK → Facilities.id)
+- classId (FK → Classes.id)
+
+## Posts
+
+- id (PK)
+- childId (FK → Children.id)
+- parentId (FK → Users.id)
 - postDay
 - pickUpPerson
 - temperature
@@ -65,27 +67,27 @@
 - medicationRequired
 - typeOfMedication
 - timingOfMedication
-- log → Log (1:1)
+- log → Logs (1:1)
 - createdAt
 - updatedAt
 - deletedAt
 
-## Log
+## Logs
 
 - id (PK)
-- postId (FK, UNIQUE → Post.id)
+- postId (FK, UNIQUE → Posts.id)
 - scenes
 - photoUrl
 - staff
-- events → [Event]
+- events → [Events]
 - createdAt
 - updatedAt
 - deletedAt
 
-## Event
+## Events
 
 - id (PK)
-- logId (FK → Log.id)
+- logId (FK → Logs.id)
 - eventOccurrenceTime
 - title
 - details
@@ -96,71 +98,89 @@
 ## ER画像（Mermaid形式）
 ```mermaid
 erDiagram
-  users ||--o{ children : "1人のuserは1以上のchildrenを持つ"
-  facility ||--o{ manager : "facilityは1以上のmanagerがいる"
-  facility ||--o{ classEntity : "facilityは1以上のclassを持つ"
-  children ||--o{ posts : "一人のchildrenは複数のpostsを持つ" 
-  posts ||--|| logs : "一つのpostsに一つのlogsがある"
-  logs ||--o{ events : "一つの記録に複数のeventを持つ"
+  Users ||--o{ Children : "1人のuserは1以上のchildrenを持つ"
+  Classes ||--o{ Staffs : "一つのclassは複数のstaffを持つ"
+  Facilities ||--o{ Staffs : "一つのfacilityは複数のstaffを持つ"
+  Facilities ||--o{ Managers : "一つのfacilityは1以上のmanagerがいる"
+  Facilities ||--o{ Classes : "一つのfacilityは1以上のclassを持つ"
+  Children ||--o{ Posts : "一人のchildは複数のpostsを持つ"
+  Children ||--|| Classes : "一人のChildは一つのclassに所属する"
+  Posts ||--|| Logs : "一つのpostに一つのlogがある"
+  Logs ||--o{ Events : "一つのlogに複数のeventを持つ"
 
-  users {
+  Users {
     int id PK "保護者ID"
     string name "保護者名"
     string tel "保護者電話番号"
     string email "メールアドレス"
-    string pwd "パスワード"
+    string password "パスワード"
     string photoUrl "保護者アイコン画像URL"
   }
-  children {
+  Children {
     int id PK "こどもID"
-    int parentId FK "保護者ID：users.id"
+    int parentId FK "保護者ID：Users.id"
     string name "こども名"
     string nameKana "こども名かな"
     date birthday "こども誕生日"
+    int classId FK "クラスID：Classes.id"
     string allergens "アレルギー食物"
-    string milk "1回にあげるミルクの量"
+    string milk_amount "1回にあげるミルクの量"
+    string milk_interval "ミルクをあげる間隔"
     string photoUrl "こどもアイコン画像URL"
   }
-  facility {
+  Facilities {
     int id PK "施設ID"
-    string name "クラス名"
+    string name "施設名"
   }
-  classEntity {
+  Classes {
     int id PK "クラスID"
     string name "クラス名"
   }
-  manager {
-    int id PK "施設ID"
-    string name "クラス名"
-    string email "メールアドレス"
+  Managers {
+    int id PK "管理者ID"
+    string name "管理者名"
+    string email "管理者メールアドレス"
   }
-  posts {
+  Staffs {
+    int id PK "スタッフID"
+    string name "スタッフ名"
+    string email "スタッフメールアドレス"
+    int facilityId FK "施設ID：Facilities.id"
+    int classId FK "クラスID：Classes.id"
+  }
+  Posts {
     int id PK "投稿ID"
-    int childrenID FK "こどもID"
-    int parentId FK "保護者ID：users.id"
+    int childId FK "こどもID：Children.id"
+    int parentId FK "保護者ID：Users.id"
     date postDay "登園日"
     string pickUpPerson "今日のお迎え担当"
     string temperature "今日の体温"
     string messages "今日の注意点・指示・昨日・登園前の様子"
     boolean medicationRequired "投薬の有無"
     string typeOfMedication "薬の種類（粉・液・塗り薬）"
-    string timingOfmedication "投薬するタイミング"
-    timestamp created_at
-    timestamp updated_at
-    timestamp deleted_at
+    string timingOfMedication "投薬するタイミング"
+    timestamp createdAt
+    timestamp updatedAt
+    timestamp deletedAt
   }
-  logs {
-    int id PK "ID"
-    date postDay FK "posts.postday 記録日"
-    string Scenes "本日の保育中の様子"
+  Logs {
+    int id PK "ログID"
+    int postId FK "投稿ID：Posts.id"
+    string scenes "本日の保育中の様子"
     string photoUrl "保育画像URL"
     string staff "担当スタッフ"
+    timestamp createdAt
+    timestamp updatedAt
+    timestamp deletedAt
   }
-  events {
-    int id PK "ID"
-    date postDay FK "posts.postday 記録日"
-    date eventOccuranceTime "イベント発生時間"
+  Events {
+    int id PK "イベントID"
+    int logId FK "ログID：Logs.id"
+    timestamp eventOccurrenceTime "イベント発生時間"
     string title "イベントタイトル"
     string details "イベント内容"
+    timestamp createdAt
+    timestamp updatedAt
+    timestamp deletedAt
   }
 ```
