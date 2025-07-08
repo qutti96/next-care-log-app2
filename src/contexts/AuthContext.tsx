@@ -3,7 +3,7 @@
 'use client'
 import React, { createContext, useContext, ReactNode } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { User } from '@supabase/auth-helpers-nextjs'
+import { User } from '@supabase/supabase-js'
 import { UserProfile } from '@/lib/supabase'
 
 interface AuthContextType {

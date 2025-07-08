@@ -3,7 +3,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
-import { createClientSupabase, UserProfile } from '@/lib/supabase'
+import { supabase, UserProfile } from '@/lib/supabase'
 
 // 型安全なユーザープロファイル型
 // type UserProfile = Database['public']['Tables']['users']['Row']
@@ -22,7 +22,7 @@ export function useAuth(): AuthState {
   const [error, setError] = useState<string | null>(null)
 
 // クライアント専用のSupabaseクライアント使用
-  const supabase = createClientSupabase()
+  // const supabase = supabase()
 
   const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
