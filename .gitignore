@@ -25,6 +25,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# env files
+.env
 # local env files
 .env*.local
 
@@ -34,3 +36,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/generated/prisma
+
+# prisma database files (SQLite使用時)
+/prisma/dev.db
+/prisma/dev.db-journal
+*.db
+*.db-journal
+
+# 環境変数ファイル
+/prisma/.env

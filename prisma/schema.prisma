@@ -1,0 +1,169 @@
+// prisma/schema.prisma（最新ER図対応版）
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String  @id @default(cuid())
+  name     String
+  tel      String?
+  email    String  @unique
+  password String
+  photoUrl String?
+
+  children Child[]
+  posts    Post[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("users")
+}
+
+model Child {
+  id           String   @id @default(cuid())
+  parentId     String
+  name         String
+  nameKana     String?
+  birthday     DateTime @db.Date
+  classId      String
+  allergens    String?
+  milkAmount   String?  @map("milk_amount") // ER図のsnake_caseに正確対応
+  milkInterval String?  @map("milk_interval") // ER図のsnake_caseに正確対応
+  photoUrl     String?
+
+  parent User   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  class  Class  @relation(fields: [classId], references: [id])
+  posts  Post[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("children")
+}
+
+model Facility {
+  id   String @id @default(cuid())
+  name String
+
+  classes  Class[]
+  managers Manager[]
+  staffs   Staff[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("facilities")
+}
+
+model Class {
+  id         String @id @default(cuid())
+  name       String
+  facilityId String
+
+  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  children Child[]
+  staffs   Staff[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("classes")
+}
+
+model Manager {
+  id         String @id @default(cuid())
+  name       String
+  email      String @unique
+  facilityId String
+
+  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("managers")
+}
+
+model Staff {
+  id         String @id @default(cuid())
+  name       String
+  email      String @unique
+  facilityId String
+  classId    String
+
+  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  class    Class    @relation(fields: [classId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("staffs")
+}
+
+model Post {
+  id                 String   @id @default(cuid())
+  childId            String
+  parentId           String
+  postDay            DateTime @db.Date
+  pickUpPerson       String?
+  temperature        String?
+  messages           String?
+  medicationRequired Boolean  @default(false)
+  typeOfMedication   String?
+  timingOfMedication String?
+
+  child  Child @relation(fields: [childId], references: [id], onDelete: Cascade)
+  parent User  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  log    Log?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("posts")
+}
+
+model Log {
+  id       String  @id @default(cuid())
+  postId   String  @unique
+  scenes   String?
+  photoUrl String?
+  staff    String?
+
+  post   Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  events Event[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("logs")
+}
+
+model Event {
+  id                  String   @id @default(cuid())
+  logId               String
+  eventOccurrenceTime DateTime
+  title               String
+  details             String?
+
+  log Log @relation(fields: [logId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("events")
+}
