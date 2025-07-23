@@ -174,3 +174,17 @@ export interface ClassStats {
   presentToday: number;
   staffCount: number;
 }
+
+//  === 子どもの月齢の型定義 ===
+export interface ChildAgeInfo {
+  years: number;
+  months: number;
+  totalMonths: number;
+  displayText: string;
+  isInfant: boolean;
+  isToddler: boolean;
+}
+
+export interface ChildWithAge extends ChildWithClass {
+  age: ChildAgeInfo;
+}

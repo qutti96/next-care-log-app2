@@ -35,7 +35,7 @@ export const childFormSchema = z.object({
   allergens: z.string().max(200, 'アレルギー情報は200文字以内で入力してください').optional(),
   milkAmount: z.string().max(50, 'ミルクの量は50文字以内で入力してください').optional(),
   milkInterval: z.string().max(50, 'ミルクの間隔は50文字以内で入力してください').optional(),
-  photoUrl: z.string().url('有効なURLを入力してください').optional().or(z.literal('')),
+  photoUrl: z.string().url({ message: '有効なURLを入力してください' }).optional().or(z.literal('')),
 });
 
 export type ChildFormValues = z.infer<typeof childFormSchema>;
