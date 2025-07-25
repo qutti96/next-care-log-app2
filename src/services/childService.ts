@@ -1,20 +1,9 @@
 // lib/services/childService.ts（月齢計算統合版）
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
-import { ChildWithAge } from '@/types';
+import { ChildFormData, ChildWithAge } from '@/types';
 import { getDetailedAge } from '@/lib/utils/dateUtils';
 
-export async function createChild(data: {
-  parentId: string;
-  name: string;
-  nameKana?: string;
-  birthday: string; // フォームからはstring
-  classId: string;
-  allergens?: string;
-  milkAmount?: string;
-  milkInterval?: string;
-  photoUrl?: string;
-}): Promise<ChildWithAge> {
+export async function createChild(data: ChildFormData & {parentId: string}): Promise<ChildWithAge> {
   // string型からDate型に変換してデータベースに保存
   const child = await prisma.child.create({
     data: {
