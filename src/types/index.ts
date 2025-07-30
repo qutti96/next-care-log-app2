@@ -184,7 +184,19 @@ export interface ChildAgeInfo {
   isInfant: boolean;
   isToddler: boolean;
 }
-
 export interface ChildWithAge extends ChildWithClass {
   age: ChildAgeInfo;
+}
+
+// 子ども情報更新用の型（部分更新対応）
+export type UpdateChildInput = Partial<Omit<ChildFormData, 'birthday'>> & {
+  birthday?: string; // 更新時もstring型で受け取り、サービス層でDate変換
+};
+
+// 子どもエラーハンドリング統一用（オプション）
+export class ChildServiceError extends Error {
+  constructor(message: string, public code: 'NOT_FOUND' | 'UNAUTHORIZED' | 'VALIDATION_ERROR') {
+    super(message);
+    this.name = 'ChildServiceError';
+  }
 }
