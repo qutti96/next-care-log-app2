@@ -42,17 +42,18 @@
 
 | 技術スタック       | 理由                                     |
 | ------------- | ---------------------------------------- |
-| Next.js       | サーバーサイドレンダリングと静的サイト生成が可能で、SEO対策に優れる。 |
+| Next.js 14 | App Routerによる最新のルーティングとサーバーサイドレンダリング対応 |
 | TypeScript    | 型安全なコードが書け、開発効率が向上する。               |
-| Supabase      | リアルタイムデータベースと認証機能が充実しているため、迅速な開発が可能。 |
+| Prisma | 型安全なORM。マイグレーション管理とSupabaseとの親和性が高い |
+| Supabase | PostgreSQL基盤のBaaS。リアルタイム機能と認証が充実 |
 
 | データベース       | 理由                                     |
 | ------------- | ---------------------------------------- |
-| Supabase     | スケーラブルでリアルタイムのデータ更新が可能。               |
+| PostgreSQL (Supabase) | UUID型ネイティブサポート。スケーラブルでリアルタイム更新対応 |
 
 | 認証方法         | 理由                                     |
 | ------------- | ---------------------------------------- |
-| Supabase Auth | メールアドレスとパスワード、Google認証など多様な認証方法をサポート。 |
+| Supabase Auth | UUIDベースの認証。RLSとの完璧な統合。多様な認証プロバイダー対応 |
 
 | デザイン       | 理由                                                                                  |
 | ------------- | ------------------------------------------------------------------------------------- |
@@ -61,6 +62,55 @@
 | CSS           | 理由                                                                                  |
 | ------------- | ------------------------------------------------------------------------------------- |
 | tailwindcss   | ユーティリティファーストな設計で、柔軟かつ効率的にスタイリングが可能。shadcn/uiとの組み合わせでモダンなUIを実現できる。|
+
+## データベース設計原則
+
+### UUID型の全面採用
+- 全てのPKをUUID型に統一
+- Supabase AuthのUUID型との完全互換性確保
+- セキュリティ向上（推測困難なID）
+- 分散システムへの拡張性確保
+
+### Supabase Auth統合設計
+- `users.password`をnullable化（段階的移行対応）
+- RLSポリシーで`auth.uid() = users.id`による完璧なアクセス制御
+- 認証とデータベースの型統一による高パフォーマンス
+
+### カラム命名規則の統一
+- データベースレベル：snake_case（PostgreSQL慣例）
+- アプリケーションレベル：camelCase（TypeScript慣例）
+- Prismaの`@map()`ディレクティブで自動変換
+
+### 命名規則統一ガイドライン
+
+本アプリケーションでは、各レイヤーで以下の命名規則を採用し、
+技術的最適性と保守性の両立を図っています：
+
+#### Prismaスキーマ（アプリケーション層）
+- **モデル名**: 単数形、PascalCase（例：`User`, `Child`, `Post`）
+- **フィールド名**: camelCase（例：`parentId`, `createdAt`）
+- **理由**: 1つのエンティティを表現し、TypeScript型生成を最適化
+
+#### データベース（データ層）
+- **テーブル名**: 複数形、snake_case（例：`users`, `children`, `posts`）
+- **カラム名**: snake_case（例：`parent_id`, `created_at`）
+- **理由**: PostgreSQL/Supabase慣例に準拠、レコード集合を表現
+
+#### 統一原則
+| 項目 | Prisma | Database | TypeScript | API |
+|------|--------|----------|------------|-----|
+| エンティティ名 | `User` | `users` | `User` | `/users` |
+| フィールド名 | `parentId` | `parent_id` | `parentId` | `parentId` |
+| 日時フィールド | `createdAt` | `created_at` | `createdAt` | `createdAt` |
+
+#### 実装例
+```prisma
+model User {           // アプリ：単数形、camelCase
+  parentId String @map("parent_id")  // DB：snake_case
+  @@map("users")       // テーブル：複数形
+}
+
+```
 
 ## ユーザーロール
 
@@ -541,6 +591,44 @@
 - 画面設計はユーザビリティを重視し、直感的な操作が可能なデザインを心掛ける。
 - 各画面の要素はレスポンシブデザインで設計する。スマートフォン,タブレット,PCブラウザでも快適に利用できるようにする。
 
+## データベース設計書
+
+| コレクション名      | ドキュメント名        | フィールド名           | データ型     | 説明                                  |
+| ------------------ | ------------------ | ------------------ | ---------- | ---------------------------------------- |
+| 登園連絡（attendance） | {userId}_{timestamp} | userId             | string     | 登園連絡を作成した保護者のユーザーID。               |
+| 登園連絡（attendance） | {userId}_{timestamp} | childId            | string     | 登園連絡を行う子どものID。                        |
+| 登園連絡（attendance） | {userId}_{timestamp} | status             | string     | 登園、欠席、遅刻のいずれかの状態。                    |
+| 登園連絡（attendance） | {userId}_{timestamp} | comment           | string     | 登園連絡に関するコメント。                        |
+| クラス（classes）       | {classId}          | name               | string     | クラスの名前。                                |
+| クラス（classes）       | {classId}          | staffId            | string     | クラスを担当するスタッフのユーザーID。                |
+| 施設情報（facility）     | main               | address            | string     | 施設の住所。                                |
+| 施設情報（facility）     | main               | phoneNumber        | string     | 施設の電話番号。                              |
+| 施設情報（facility）     | main               | openingHours       | string     | 施設の開園時間。                              |
+| 保護者との連絡（messages） | {messageId}        | senderId           | string     | メッセージを送信したユーザーのID。                   |
+| 保護者との連絡（messages） | {messageId}        | receiverId         | string     | メッセージを受信したユーザーのID。                   |
+| 保護者との連絡（messages） | {messageId}        | content            | string     | メッセージの内容。                              |
+| 保護者との連絡（messages） | {messageId}        | timestamp          | timestamp  | メッセージの送信日時。                            |
+
+## API設計書
+
+| エンドポイント               | メソッド | 説明                                     | リクエストボディ例                             | レスポンス例                                 |
+| ------------------------ | ------ | ---------------------------------------- | ------------------------------------------ | ---------------------------------------- |
+| /api/auth/login          | POST   | ユーザーのログインを行う。                        | { "email": "qutti96@gmail.com", "password": "password123" } | { "success": true, "userId": "user_123" } |
+| /api/auth/register       | POST   | 新規ユーザー登録を行う。                        | { "email": "qutti96@gmail.com", "password": "password123" } | { "success": true, "userId": "user_123" } |
+| /api/attendance/create   | POST   | 登園連絡を作成する。                            | { "childId": "child_123", "status": "登園", "comment": "元気に登園しました。" } | { "success": true, "attendanceId": "attendance_123" } |
+| /api/attendance/list     | GET    | 登園連絡の一覧を取得する。                        | -                                          | [ { "attendanceId": "attendance_123", "childId": "child_123", "status": "登園", "comment": "元気に登園しました。" } ] |
+| /api/attendance/edit     | PUT    | 登園連絡を編集する。                            | { "attendanceId": "attendance_123", "status": "欠席", "comment": "体調不良で欠席します。" } | { "success": true }                     |
+| /api/attendance/delete   | DELETE | 登園連絡を削除する。                            | { "attendanceId": "attendance_123" }       | { "success": true }                     |
+| /api/classes/list       | GET    | クラスの一覧を取得する。                          | -                                          | [ { "classId": "class_123", "name": "年少組", "staffId": "staff_123" } ] |
+| /api/classes/create     | POST   | 新しいクラスを作成する。                          | { "name": "年少組", "staffId": "staff_123" } | { "success": true, "classId": "class_123" } |
+| /api/classes/edit       | PUT    | クラス情報を編集する。                            | { "classId": "class_123", "name": "年中組", "staffId": "staff_456" } | { "success": true }                     |
+| /api/classes/delete     | DELETE | クラスを削除する。                              | { "classId": "class_123" }                   | { "success": true }                     |
+| /api/facility/info      | GET    | 施設情報を取得する。                            | -                                          | { "address": "東京都新宿区1-2-3", "phoneNumber": "03-1234-5678", "openingHours": "9:00-18:00" } |
+| /api/facility/edit      | PUT    | 施設情報を編集する。                            | { "address": "東京都新宿区1-2-3", "phoneNumber": "03-1234-5678", "openingHours": "9:00-18:00" } | { "success": true }                     |
+| /api/messages/send      | POST   | メッセージを送信する。                            | { "receiverId": "user_456", "content": "こんにちは！" } | { "success": true, "messageId": "message_123" } |
+| /api/messages/list      | GET    | メッセージの一覧を取得する。                        | -                                          | [ { "messageId": "message_123", "senderId": "user_123", "receiverId": "user_456", "content": "こんにちは！", "timestamp": "2024-02-01T12:00:00Z" } ] |
+
+
 ## テスト計画
 
 | テスト項目         | 説明                                     | 重要度 |
@@ -554,6 +642,21 @@
 | 施設情報管理機能   | 施設情報の編集・保存が正しく行えるかを確認する。           | 中     |
 | 保護者との連絡機能   | メッセージの送受信が正しく行えるかを確認する。           | 中     |
 | ログ記録機能       | ログの保存・表示が正しく行えるかを確認する。              | 中     |
+
+## テストケース一覧
+
+| テストケース名         | 説明                                     | 期待結果                                   |
+| 重要度 |
+| ------------------ | ---------------------------------------- | ---------------------------------------- | ------ |
+| ログイン機能テスト       | 正常系のログインを行い、ダッシュボードに遷移するかを確認する。 | ダッシュボードに遷移し、ユーザー情報が表示される。         | 高     |
+| 登園連絡作成機能テスト   | 登園連絡を正常に作成できるかを確認する。               | 登園連絡が作成され、一覧に表示される。                   | 高     |
+| 登園連絡一覧表示機能テスト | 登園連絡の一覧が正しく表示されるかを確認する。           | 登園連絡のリストが正しく表示される。                   | 高     |
+| 登園連絡編集機能テスト   | 登園連絡を正常に編集できるかを確認する。               | 編集後の登園連絡が正しく更新される。                   | 中     |
+| 登園連絡削除機能テスト   | 登園連絡を正常に削除できるかを確認する。               | 削除後、登園連絡が一覧から消える。                     | 中     |
+| クラス管理機能テスト     | クラスの追加・編集・削除が正常に行えるかを確認する。         | クラスが正しく追加、編集、削除される。                   | 中     |
+| 施設情報管理機能テスト   | 施設情報の編集・保存が正常に行えるかを確認する。           | 編集後の施設情報が正しく更新される。                   | 中     |
+| 保護者との連絡機能テスト   | メッセージの送受信が正常に行えるかを確認する。           | メッセージが正しく送信され、受信者の一覧に表示される。         | 中     |
+| ログ記録機能テスト       | ログの保存・表示が正常に行えるかを確認する。               | ログが正しく保存され、一覧に表示される。                   | 中     |
 
 ## スケジュール
 
@@ -700,54 +803,3 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
 - ブラウザで `http://localhost:3000` にアクセスし、アプリが正しく動作することを確認します。
 
-## データベース設計書
-
-| コレクション名      | ドキュメント名        | フィールド名           | データ型     | 説明                                  |
-| ------------------ | ------------------ | ------------------ | ---------- | ---------------------------------------- |
-| 登園連絡（attendance） | {userId}_{timestamp} | userId             | string     | 登園連絡を作成した保護者のユーザーID。               |
-| 登園連絡（attendance） | {userId}_{timestamp} | childId            | string     | 登園連絡を行う子どものID。                        |
-| 登園連絡（attendance） | {userId}_{timestamp} | status             | string     | 登園、欠席、遅刻のいずれかの状態。                    |
-| 登園連絡（attendance） | {userId}_{timestamp} | comment           | string     | 登園連絡に関するコメント。                        |
-| クラス（classes）       | {classId}          | name               | string     | クラスの名前。                                |
-| クラス（classes）       | {classId}          | staffId            | string     | クラスを担当するスタッフのユーザーID。                |
-| 施設情報（facility）     | main               | address            | string     | 施設の住所。                                |
-| 施設情報（facility）     | main               | phoneNumber        | string     | 施設の電話番号。                              |
-| 施設情報（facility）     | main               | openingHours       | string     | 施設の開園時間。                              |
-| 保護者との連絡（messages） | {messageId}        | senderId           | string     | メッセージを送信したユーザーのID。                   |
-| 保護者との連絡（messages） | {messageId}        | receiverId         | string     | メッセージを受信したユーザーのID。                   |
-| 保護者との連絡（messages） | {messageId}        | content            | string     | メッセージの内容。                              |
-| 保護者との連絡（messages） | {messageId}        | timestamp          | timestamp  | メッセージの送信日時。                            |
-
-## API設計書
-
-| エンドポイント               | メソッド | 説明                                     | リクエストボディ例                             | レスポンス例                                 |
-| ------------------------ | ------ | ---------------------------------------- | ------------------------------------------ | ---------------------------------------- |
-| /api/auth/login          | POST   | ユーザーのログインを行う。                        | { "email": "qutti96@gmail.com", "password": "password123" } | { "success": true, "userId": "user_123" } |
-| /api/auth/register       | POST   | 新規ユーザー登録を行う。                        | { "email": "qutti96@gmail.com", "password": "password123" } | { "success": true, "userId": "user_123" } |
-| /api/attendance/create   | POST   | 登園連絡を作成する。                            | { "childId": "child_123", "status": "登園", "comment": "元気に登園しました。" } | { "success": true, "attendanceId": "attendance_123" } |
-| /api/attendance/list     | GET    | 登園連絡の一覧を取得する。                        | -                                          | [ { "attendanceId": "attendance_123", "childId": "child_123", "status": "登園", "comment": "元気に登園しました。" } ] |
-| /api/attendance/edit     | PUT    | 登園連絡を編集する。                            | { "attendanceId": "attendance_123", "status": "欠席", "comment": "体調不良で欠席します。" } | { "success": true }                     |
-| /api/attendance/delete   | DELETE | 登園連絡を削除する。                            | { "attendanceId": "attendance_123" }       | { "success": true }                     |
-| /api/classes/list       | GET    | クラスの一覧を取得する。                          | -                                          | [ { "classId": "class_123", "name": "年少組", "staffId": "staff_123" } ] |
-| /api/classes/create     | POST   | 新しいクラスを作成する。                          | { "name": "年少組", "staffId": "staff_123" } | { "success": true, "classId": "class_123" } |
-| /api/classes/edit       | PUT    | クラス情報を編集する。                            | { "classId": "class_123", "name": "年中組", "staffId": "staff_456" } | { "success": true }                     |
-| /api/classes/delete     | DELETE | クラスを削除する。                              | { "classId": "class_123" }                   | { "success": true }                     |
-| /api/facility/info      | GET    | 施設情報を取得する。                            | -                                          | { "address": "東京都新宿区1-2-3", "phoneNumber": "03-1234-5678", "openingHours": "9:00-18:00" } |
-| /api/facility/edit      | PUT    | 施設情報を編集する。                            | { "address": "東京都新宿区1-2-3", "phoneNumber": "03-1234-5678", "openingHours": "9:00-18:00" } | { "success": true }                     |
-| /api/messages/send      | POST   | メッセージを送信する。                            | { "receiverId": "user_456", "content": "こんにちは！" } | { "success": true, "messageId": "message_123" } |
-| /api/messages/list      | GET    | メッセージの一覧を取得する。                        | -                                          | [ { "messageId": "message_123", "senderId": "user_123", "receiverId": "user_456", "content": "こんにちは！", "timestamp": "2024-02-01T12:00:00Z" } ] |
-
-## テストケース一覧
-
-| テストケース名         | 説明                                     | 期待結果                                   |
-| 重要度 |
-| ------------------ | ---------------------------------------- | ---------------------------------------- | ------ |
-| ログイン機能テスト       | 正常系のログインを行い、ダッシュボードに遷移するかを確認する。 | ダッシュボードに遷移し、ユーザー情報が表示される。         | 高     |
-| 登園連絡作成機能テスト   | 登園連絡を正常に作成できるかを確認する。               | 登園連絡が作成され、一覧に表示される。                   | 高     |
-| 登園連絡一覧表示機能テスト | 登園連絡の一覧が正しく表示されるかを確認する。           | 登園連絡のリストが正しく表示される。                   | 高     |
-| 登園連絡編集機能テスト   | 登園連絡を正常に編集できるかを確認する。               | 編集後の登園連絡が正しく更新される。                   | 中     |
-| 登園連絡削除機能テスト   | 登園連絡を正常に削除できるかを確認する。               | 削除後、登園連絡が一覧から消える。                     | 中     |
-| クラス管理機能テスト     | クラスの追加・編集・削除が正常に行えるかを確認する。         | クラスが正しく追加、編集、削除される。                   | 中     |
-| 施設情報管理機能テスト   | 施設情報の編集・保存が正常に行えるかを確認する。           | 編集後の施設情報が正しく更新される。                   | 中     |
-| 保護者との連絡機能テスト   | メッセージの送受信が正常に行えるかを確認する。           | メッセージが正しく送信され、受信者の一覧に表示される。         | 中     |
-| ログ記録機能テスト       | ログの保存・表示が正常に行えるかを確認する。               | ログが正しく保存され、一覧に表示される。                   | 中     |

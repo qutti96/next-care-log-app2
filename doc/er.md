@@ -2,186 +2,227 @@
 
 ## Users
 
-- id (PK)
-- name
-- tel
-- email (UNIQUE)
-- password
-- photoUrl
+- id (PK,UUID)
+- name(TEXT)
+- tel(TEXT,NULLABLE)
+- email (TEXT,UNIQUE)
+- password(TEXT,NULLABLE)
+- photo_url(TEXT,NULLABLE)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+- deleted_at (TIMESTAMP, NULLABLE)
 - children → [Children]
 - posts → [Posts]
 
 ## Children
 
-- id (PK)
-- parentId (FK → Users.id)
-- name
-- nameKana
-- birthday
-- classId (FK → Classes.id)
-- allergens
-- milk_amount
-- milk_interval
-- photoUrl
+- id (PK,UUID)
+- parent_id (FK → Users.id,UUID)
+- name(TEXT)
+- nameKana(TEXT,NULLABLE)
+- birthday(DATE)
+- class_id (FK → Classes.id,UUID)
+- allergens(TEXT,NULLABLE)
+- milk_amount(TEXT,NULLABLE)
+- milk_interval(TEXT,NULLABLE)
+- photo_url(TEXT,NULLABLE)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+- deleted_at (TIMESTAMP, NULLABLE)
 - posts → [Posts]
 
 ## Facilities
 
-- id (PK)
-- name
+- id (PK,UUID)
+- name(TEXT)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+- deleted_at (TIMESTAMP, NULLABLE)
 - classes → [Classes]
 - managers → [Managers]
 - staff → [Staffs]
 
 ## Classes
 
-- id (PK)
-- name
-- facilityId (FK → Facilities.id)
+- id (PK,UUID)
+- name(TEXT)
+- facility_id (FK → Facilities.id,UUID)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+- deleted_at (TIMESTAMP, NULLABLE)
+- children → [Children]
 - staff → [Staffs]
 
 ## Managers
 
-- id (PK)
-- name
-- email (UNIQUE)
-- facilityId (FK → Facilities.id)
+- id (PK,UUID)
+- name(TEXT)
+- email (TEXT,UNIQUE)
+- facility_id (FK → Facilities.id,UUID)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+- deleted_at (TIMESTAMP, NULLABLE)
 
 ## Staffs
 
-- id (PK)
-- name
-- email (UNIQUE)
-- facilityId (FK → Facilities.id)
-- classId (FK → Classes.id)
+- id (PK,UUID)
+- name(TEXT)
+- email (TEXT,UNIQUE)
+- facility_id (FK → Facilities.id,UUID)
+- class_id (FK → Classes.id,UUID)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+- deleted_at (TIMESTAMP, NULLABLE)
 
 ## Posts
 
-- id (PK)
-- childId (FK → Children.id)
-- parentId (FK → Users.id)
-- postDay
-- pickUpPerson
-- temperature
-- messages
-- medicationRequired
-- typeOfMedication
-- timingOfMedication
+- id (PK,UUID)
+- child_id (FK → Children.id,UUID)
+- parent_id (FK → Users.id,UUID)
+- postDay(DATE)
+- pick_up_person(TEXT,NULLABLE)
+- temperature(TEXT,NULLABLE)
+- messages(TEXT,NULLABLE)
+- medication_required(BOOLEAN,DEFAULT FALSE)
+- type_of_medication(TEXT,NULLABLE)
+- timing_of_medication(TEXT,NULLABLE)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+- deleted_at (TIMESTAMP, NULLABLE)
 - log → Logs (1:1)
-- createdAt
-- updatedAt
-- deletedAt
 
 ## Logs
 
-- id (PK)
-- postId (FK, UNIQUE → Posts.id)
-- scenes
-- photoUrl
-- staff
+- id (PK,UUID)
+- postId (FK, UNIQUE → Posts.id,UUID)
+- scenes (TEXT, NULLABLE)
+- photo_url (TEXT, NULLABLE)
+- staff (TEXT, NULLABLE)
+
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+- deleted_at (TIMESTAMP, NULLABLE)
 - events → [Events]
-- createdAt
-- updatedAt
-- deletedAt
 
 ## Events
 
-- id (PK)
-- logId (FK → Logs.id)
-- eventOccurrenceTime
-- title
-- details
-- createdAt
-- updatedAt
-- deletedAt
+- id (PK,UUID)
+- logId (FK → Logs.id,UUID)
+- event_occurrence_time (TIMESTAMP)
+- title (TEXT)
+- details (TEXT, NULLABLE)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+- deleted_at (TIMESTAMP, NULLABLE)
 
 ## ER画像（Mermaid形式）
 ```mermaid
 erDiagram
-  Users ||--o{ Children : "1人のuserは1以上のchildrenを持つ"
-  Classes ||--o{ Staffs : "一つのclassは複数のstaffを持つ"
-  Facilities ||--o{ Staffs : "一つのfacilityは複数のstaffを持つ"
-  Facilities ||--o{ Managers : "一つのfacilityは1以上のmanagerがいる"
-  Facilities ||--o{ Classes : "一つのfacilityは1以上のclassを持つ"
-  Children ||--o{ Posts : "一人のchildは複数のpostsを持つ"
-  Children ||--|| Classes : "一人のChildは一つのclassに所属する"
-  Posts ||--|| Logs : "一つのpostに一つのlogがある"
-  Logs ||--o{ Events : "一つのlogに複数のeventを持つ"
-
   Users {
-    int id PK "保護者ID"
+    uuid id PK "保護者ID"
     string name "保護者名"
     string tel "保護者電話番号"
-    string email "メールアドレス"
-    string password "パスワード"
-    string photoUrl "保護者アイコン画像URL"
+    string email UK "メールアドレス"
+    string password "パスワード（nullable）"
+    string photo_url "保護者アイコン画像URL"
+    timestamp created_at "作成日時"
+    timestamp updated_at "更新日時"
+    timestamp deleted_at "削除日時（nullable）"
   }
   Children {
-    int id PK "こどもID"
-    int parentId FK "保護者ID：Users.id"
+    uuid id PK "こどもID"
+    uuid parent_id FK "保護者ID"
     string name "こども名"
-    string nameKana "こども名かな"
+    string name_kana "こども名かな"
     date birthday "こども誕生日"
-    int classId FK "クラスID：Classes.id"
+    uuid class_id FK "クラスID"
     string allergens "アレルギー食物"
     string milk_amount "1回にあげるミルクの量"
     string milk_interval "ミルクをあげる間隔"
-    string photoUrl "こどもアイコン画像URL"
+    string photo_url "こどもアイコン画像URL"
+    timestamp created_at "作成日時"
+    timestamp updated_at "更新日時"
+    timestamp deleted_at "削除日時（nullable）"
   }
   Facilities {
-    int id PK "施設ID"
+    uuid id PK "施設ID"
     string name "施設名"
+    timestamp created_at "作成日時"
+    timestamp updated_at "更新日時"
+    timestamp deleted_at "削除日時（nullable）"
   }
   Classes {
-    int id PK "クラスID"
+    uuid id PK "クラスID"
     string name "クラス名"
-    int facilityId FK "施設ID：Facilities.id"  // 外部キーを明記することで属性の完全性が向上
+    uuid facility_id FK "施設ID" // 外部キーを明記することで属性の完全性が向上
+    timestamp created_at "作成日時"
+    timestamp updated_at "更新日時"
+    timestamp deleted_at "削除日時（nullable）"
   }
   Managers {
-    int id PK "管理者ID"
+    uuid id PK "管理者ID"
     string name "管理者名"
-    string email "管理者メールアドレス"
+    string email UK "管理者メールアドレス"
+    uuid facility_id FK "施設ID"
+    timestamp created_at "作成日時"
+    timestamp updated_at "更新日時"
+    timestamp deleted_at "削除日時（nullable）"
   }
   Staffs {
-    int id PK "スタッフID"
+    uuid id PK "スタッフID"
     string name "スタッフ名"
-    string email "スタッフメールアドレス"
-    int facilityId FK "施設ID：Facilities.id"
-    int classId FK "クラスID：Classes.id"
+    string email UK "スタッフメールアドレス"
+    uuid facility_id FK "施設ID"
+    uuid class_id FK "クラスID"
+    timestamp created_at "作成日時"
+    timestamp updated_at "更新日時"
+    timestamp deleted_at "削除日時（nullable）"
   }
   Posts {
-    int id PK "投稿ID"
-    int childId FK "こどもID：Children.id"
-    int parentId FK "保護者ID：Users.id"
-    date postDay "登園日"
-    string pickUpPerson "今日のお迎え担当"
+  uuid id PK "投稿ID"
+    uuid child_id FK "こどもID"
+    uuid parent_id FK "保護者ID"
+    date post_day "登園日"
+    string pick_up_person "今日のお迎え担当"
     string temperature "今日の体温"
     string messages "今日の注意点・指示・昨日・登園前の様子"
-    boolean medicationRequired "投薬の有無"
-    string typeOfMedication "薬の種類（粉・液・塗り薬）"
-    string timingOfMedication "投薬するタイミング"
-    timestamp createdAt
-    timestamp updatedAt
-    timestamp deletedAt
+    boolean medication_required "投薬の有無"
+    string type_of_medication "薬の種類"
+    string timing_of_medication "投薬するタイミング"
+    timestamp created_at "作成日時"
+    timestamp updated_at "更新日時"
+    timestamp deleted_at "削除日時（nullable）"
   }
   Logs {
-    int id PK "ログID"
-    int postId FK "投稿ID：Posts.id"
+    uuid id PK "ログID"
+    uuid post_id FK "投稿ID"
     string scenes "本日の保育中の様子"
-    string photoUrl "保育画像URL"
+    string photo_url "保育画像URL"
     string staff "担当スタッフ"
-    timestamp createdAt
-    timestamp updatedAt
-    timestamp deletedAt
+    timestamp created_at "作成日時"
+    timestamp updated_at "更新日時"
+    timestamp deleted_at "削除日時（nullable）"
   }
   Events {
-    int id PK "イベントID"
-    int logId FK "ログID：Logs.id"
-    timestamp eventOccurrenceTime "イベント発生時間"
+    uuid id PK "イベントID"
+    uuid log_id FK "ログID"
+    timestamp event_occurrence_time "イベント発生時間"
     string title "イベントタイトル"
     string details "イベント内容"
-    timestamp createdAt
-    timestamp updatedAt
-    timestamp deletedAt
+    timestamp created_at "作成日時"
+    timestamp updated_at "更新日時"
+    timestamp deleted_at "削除日時（nullable）"
   }
+
+  Users ||--o{ Children : "1人のuserは1以上のchildrenを持つ"
+  Users ||--o{ Posts : "1人のuserは1以上のpostsを持つ"
+  Children ||--o{ Posts : "一人のchildは複数のpostsを持つ"
+  Children ||--|| Classes : "一人のChildは一つのclassに所属する"
+  Facilities ||--o{ Classes : "一つのfacilityは1以上のclassを持つ"
+  Facilities ||--o{ Managers : "一つのfacilityは1以上のmanagerがいる"
+  Facilities ||--o{ Staffs : "一つのfacilityは複数のstaffを持つ"
+  Classes ||--o{ Staffs : "一つのclassは複数のstaffを持つ"
+  Posts ||--|| Logs : "一つのpostに一つのlogがある"
+  Logs ||--o{ Events : "一つのlogに複数のeventを持つ"
+
 ```
