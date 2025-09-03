@@ -22,17 +22,64 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // クライアントサイド用（型安全版）
 // ===============================
 
-/**
- * 基本クライアント（型安全版）
- * クライアントサイドでの基本的なSupabase操作用
- */
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
 /**
-* クライアントコンポーネント用（'use client'が必要）
-* ブラウザ側でCookieベースの認証セッション管理を自動実行
-*/
-export const createClientSupabase = () => createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+ * ブラウザクライアントのシングルトンインスタンス
+ * 複数インスタンス問題を根本的に解決
+ */
+let browserClient: ReturnType<typeof createBrowserClient<Database>> | null = null
+
+/**
+ * 統一Supabaseクライアント（唯一の認証対応クライアント）
+ * 全ての認証関連処理で使用する単一のクライアント
+ */
+export const createClientSupabase = () => {
+  if (!browserClient) {
+    browserClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+    console.log('✅ Supabaseブラウザクライアント作成完了（シングルトン）')
+  }
+  return browserClient
+}
+
+// ===============================
+// 既存コード互換性のための調整
+// ===============================
+
+/**
+ * デフォルトエクスポート（遅延初期化版）
+ * 重要：ファイル読み込み時ではなく、使用時にクライアントを作成
+ */
+export const getSupabaseClient = () => createClientSupabase()
+
+/**
+ * 既存コード互換性のためのsupabaseエクスポート
+ * 注意：直接使用せず、createClientSupabase()を推奨
+ */
+export const supabase = {
+  get client() {
+    return createClientSupabase()
+  },
+  auth: {
+    get signInWithPassword() {
+      return createClientSupabase().auth.signInWithPassword.bind(createClientSupabase().auth)
+    },
+    get signOut() {
+      return createClientSupabase().auth.signOut.bind(createClientSupabase().auth)
+    },
+    get getUser() {
+      return createClientSupabase().auth.getUser.bind(createClientSupabase().auth)
+    },
+    get getSession() {
+      return createClientSupabase().auth.getSession.bind(createClientSupabase().auth)
+    },
+    get onAuthStateChange() {
+      return createClientSupabase().auth.onAuthStateChange.bind(createClientSupabase().auth)
+    }
+  },
+  from(table: string) {
+    return createClientSupabase().from(table)
+  }
+}
 
 // ===============================
 // サーバーサイド用（管理者権限・型安全版）
@@ -42,7 +89,7 @@ export const createClientSupabase = () => createBrowserClient<Database>(supabase
  * サーバーサイド用Supabaseクライアント（管理者権限）
  * RLSをバイパスしてデータベース操作が可能
  */
-export const supabaseAdmin = supabaseServiceRoleKey 
+export const supabaseAdmin = supabaseServiceRoleKey
   ? createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false, // サーバーでは自動更新不要
@@ -66,14 +113,17 @@ export type UserUpdate = Database['public']['Tables']['users']['Update']
 
 /**
  * 現在の認証ユーザーのプロフィールを取得（クライアントサイド用）
+ * シングルトンクライアントを使用
  */
 export async function getCurrentUserProfile(): Promise<UserProfile | null> {
-  const supabase = createClientSupabase()
-  
+  const supabase = createClientSupabase()// シングルトンクライアント使用
+  const client = createClientSupabase()
+
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+
     if (authError || !user) {
+      console.log('認証エラーまたは未ログイン:', authError?.message || '未ログイン')
       return null
     }
 
@@ -100,12 +150,7 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
  */
 export async function checkUserRole(allowedRoles: string[]): Promise<boolean> {
   const profile = await getCurrentUserProfile()
-  
-  if (!profile || !profile.role) {
-    return false
-  }
-  
-  return allowedRoles.includes(profile.role)
+  return profile?.role ? allowedRoles.includes(profile.role) : false
 }
 
 /**
@@ -120,4 +165,41 @@ export async function isManager(): Promise<boolean> {
  */
 export async function isStaffOrManager(): Promise<boolean> {
   return checkUserRole(['staff', 'manager'])
+}
+
+// ===============================
+// 認証状態管理用ヘルパー（デバッグ強化）
+// ===============================
+
+/**
+ * 現在の認証セッション取得
+ */
+export async function getCurrentSession(){
+  const supabase = createClientSupabase()
+  const{data: {session}, error } = await supabase.auth.getSession()
+
+  if(error){
+    console.error('セッション取得エラー：', error)
+    return null
+  }
+
+  return session
+}
+
+/**
+ * 認証状態の詳細確認（デバッグ用）
+ */
+export async function debugAuthState() {
+  const supabase = createClientSupabase()
+  const { data: { session }, error } = await supabase.auth.getSession()
+  
+  console.log('=== 認証状態デバッグ ===')
+  console.log('セッション存在:', !!session)
+  console.log('ユーザー存在:', !!session?.user)
+  console.log('ユーザーID:', session?.user?.id)
+  console.log('メールアドレス:', session?.user?.email)
+  console.log('エラー:', error?.message || 'なし')
+  console.log('========================')
+  
+  return { session, error }
 }

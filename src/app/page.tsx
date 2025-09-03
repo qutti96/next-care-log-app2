@@ -86,7 +86,7 @@ export default function Home() {
                 保育園と保護者をつなぐ、新しいコミュニケーションアプリです。
               </p>
               <a
-                href="/user/login"
+                href="/users/login"
                 className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 ログインまたは新規登録

@@ -1,20 +1,28 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClientSupabase } from '@/lib/supabase'
 
-export default function UserSignUpPage() {
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+
+export default function UserLoginPage() {
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
     password: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  const router = useRouter()
-  const supabase = createClientSupabase()
+  const [message, setMessage] = useState<string | null>(null)
 
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  //登録完了メッセージの表示
+  useEffect(() => {
+    const message = searchParams.get('message')
+    if (message) {
+      setMessage(message)
+    }
+  }, [searchParams])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -24,86 +32,77 @@ export default function UserSignUpPage() {
     }))
   }
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('handleLogin called');
     setLoading(true)
     setError(null)
 
     try {
-      console.log('登録開始:', formData.email)
-      console.log('パスワード:', formData.password)
-      console.log('氏名:', formData.name)
-      console.log('ロール:', 'parent')
-
-      const { data, error } = await supabase.auth.signUp({
+      console.log('before signInWithPassword');
+      const {data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            name: formData.name,
-            role: 'parent', // デフォルトで保護者ロール
-          }
-        }
       })
+      console.log('after signInWithPassword');
+      console.log('signInWithPassword result:', { data, error })
 
       if (error) {
-        console.error('登録エラー:', error)
         setError(error.message)
-      } else if (data.user) {
-        setSuccess(true)
-        console.log('登録成功:', data.user)
+      } else {
+        console.log('✅ ログイン成功、遷移処理開始');
+        // Step 1: 即座に遷移を試行
+        console.log('🔄 遷移試行 1: router.replace');
+        router.replace('/');
 
-        // 成功メッセージを表示後、トップページに遷移
+        // Step 2: 短い遅延後にrouter.pushを試行（フォールバック）
         setTimeout(() => {
-          router.push('/')
-        }, 3000)
+          if(window.location.pathname === '/users/login'){
+            console.log('🔄 遷移試行 2: router.push (300ms後)');
+            router.push('/')
+          }
+        }, 300)
       }
+      // Step 3: 中程度の遅延後に状態確認して遷移
+      setTimeout(() => {
+        if (window.location.pathname === '/users/login') {
+          console.log('🔄 遷移試行 3: 状態確認後のrouter.push (800ms後)');
+          router.push('/');
+        }
+      }, 800);
+      // Step 4: 最終手段として強制遷移
+      setTimeout(() => {
+        if (window.location.pathname === '/users/login') {
+          console.log('🔄 遷移試行 4: 強制遷移 window.location.href (1500ms後)');
+          window.location.href = '/';
+        }
+      }, 1500);
     } catch (err) {
-      setError('登録処理中にエラーが発生しました')
-      console.error('Signup error:', err)
+      console.error('Login error (catch):', err)
+      setError('ログイン処理中にエラーが発生しました')
     } finally {
-      setLoading(false)
+      // 遷移が開始されるまでローディング状態を維持
+      // エラー時のみローディング解除
+      if (error) {
+        setLoading(false)
+      }
     }
-  }
-
-  if (success) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-100">
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md text-center">
-          <div className="text-green-600 text-6xl mb-4">✅</div>
-          <h2 className="text-2xl font-bold mb-4 text-gray-800">登録完了！</h2>
-          <p className="text-gray-600 mb-4">
-            ユーザー登録が正常に完了しました。<br />
-            Supabase Studio（http://localhost:54323）で確認してください。
-          </p>
-          <p className="text-sm text-gray-500">3秒後にトップページに移動します...</p>
-        </div>
-      </div>
-    )
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-          保護者新規登録
+          保護者ログイン
         </h2>
-        <form onSubmit={handleSignUp} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              氏名
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="山田太郎"
-            />
+        
+        {message && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4">
+            {message}
           </div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               メールアドレス
@@ -119,6 +118,7 @@ export default function UserSignUpPage() {
               placeholder="example@email.com"
             />
           </div>
+          
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               パスワード
@@ -130,27 +130,30 @@ export default function UserSignUpPage() {
               value={formData.password}
               onChange={handleChange}
               required
-              minLength={6}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="6文字以上"
+              placeholder="パスワード"
             />
           </div>
+
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
+              <strong>エラー:</strong> {error}
             </div>
           )}
+
           <button
             type="submit"
             disabled={loading}
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
           >
-            {loading ? '登録中...' : '登録ボタン'}
+            {loading ? 'ログイン中...' : 'ログインボタン'}
           </button>
         </form>
+
         <p className="mt-4 text-center text-sm text-gray-600">
-          <a href="/" className="font-medium text-indigo-600 hover:text-indigo-500">
-            トップページに戻る
+          アカウントをお持ちでないですか？{' '}
+          <a href="/users/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+            新規登録はこちら
           </a>
         </p>
       </div>
