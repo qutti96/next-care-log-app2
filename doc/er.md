@@ -154,7 +154,7 @@ erDiagram
   Classes {
     uuid id PK "クラスID"
     string name "クラス名"
-    uuid facility_id FK "施設ID" // 外部キーを明記することで属性の完全性が向上
+    uuid facility_id FK "施設ID"
     timestamp created_at "作成日時"
     timestamp updated_at "更新日時"
     timestamp deleted_at "削除日時（nullable）"
