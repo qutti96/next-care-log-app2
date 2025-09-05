@@ -1,4 +1,3 @@
-// prisma/schema.prisma（最新ER図対応版）
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,181 +8,171 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(cuid()) // UUID化は後で
-  // id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name     String
-  tel      String?
-  email    String  @unique
-  password String? // Supabase Auth移行対応のためnullable
-  photoUrl String? @map("photo_url")
-
-  children Child[]
-  posts    Post[]
-
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  tel       String?
+  email     String    @unique
+  password  String
+  photoUrl  String?   @map("photo_url")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
+  children  Child[]
+  posts     Post[]
 
+  @@index([deletedAt]) // ソフトデリート対応
   @@map("users")
 }
 
 model Child {
-  id           String   @id @default(cuid()) // UUID化は後で
-  // id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  parentId     String   @map("parent_id") // @mapのみ
-  // parentId     String   @map("parent_id") @db.Uuid
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parentId     String    @map("parent_id") @db.Uuid
   name         String
-  nameKana     String?  @map("name_kana")
-  birthday     DateTime @db.Date
-  classId      String   @map("class_id") // @mapのみ
-  // classId      String   @map("class_id") @db.Uuid
+  nameKana     String?   @map("name_kana")
+  birthday     DateTime  @db.Date
+  classId      String    @map("class_id") @db.Uuid
   allergens    String?
-  milkAmount   String?  @map("milk_amount")
-  milkInterval String?  @map("milk_interval")
-  photoUrl     String?  @map("photo_url")
-
-  parent User   @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  class  Class  @relation(fields: [classId], references: [id])
-  posts  Post[]
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") // DEFAULTを追加
-  deletedAt DateTime? @map("deleted_at")
+  milkAmount   String?   @map("milk_amount")
+  milkInterval String?   @map("milk_interval")
+  photoUrl     String?   @map("photo_url")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+  class        Class     @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  parent       User      @relation(fields: [parentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  posts        Post[]
 
   // @@index([parentId])
-  // @@index([classId])
+  @@index([classId])
+  @@index([deletedAt])
+  @@index([birthday]) // 年齢検索対応
+  @@index([parentId, deletedAt]) // 親のタイムライン取得最適化
   @@map("children")
 }
 
 model Facility {
-  id   String @id @default(cuid()) // UUID化は後で
-  // id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name String
-
-  classes  Class[]
-  managers Manager[]
-  staffs   Staff[]
-
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
   createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") // DEFAULTを追加
+  updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
+  classes   Class[]
+  managers  Manager[]
+  staffs    Staff[]
 
+  @@index([name]) // 施設名検索
+  @@index([deletedAt])
   @@map("facilities")
 }
 
 model Class {
-  id         String @id @default(cuid()) // UUID化は後で
-  // id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String
-  facilityId String @map("facility_id") @db.Uuid
+  facilityId String    @map("facility_id") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+  children   Child[]
+  facility   Facility  @relation(fields: [facilityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  staffs     Staff[]
 
-  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
-  children Child[]
-  staffs   Staff[]
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") // DEFAULTを追加
-  deletedAt DateTime? @map("deleted_at")
-
-  @@index([facilityId])
+  @@unique([facilityId, name]) // 同一施設内でのクラス名重複防止
+  @@index([facilityId, deletedAt]) // 複合インデックス
   @@map("classes")
 }
 
 model Manager {
-  id         String @id @default(cuid()) // UUID化は後で
-  // id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String
-  email      String @unique
-  facilityId String @map("facility_id") @db.Uuid
+  email      String    @unique
+  facilityId String    @map("facility_id") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+  facility   Facility  @relation(fields: [facilityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") // DEFAULTを追加
-  deletedAt DateTime? @map("deleted_at")
-
-  @@index([facilityId])
+  @@index([facilityId, deletedAt]) // 施設ごと+未削除の一覧取得最適化
   @@map("managers")
 }
 
 model Staff {
-  id         String @id @default(cuid()) // UUID化は後で
-  // id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String
-  email      String @unique
-  facilityId String @map("facility_id") @db.Uuid
-  classId    String @map("class_id") @db.Uuid
+  email      String    @unique
+  facilityId String    @map("facility_id") @db.Uuid
+  classId    String    @map("class_id") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+  class      Class     @relation(fields: [classId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  facility   Facility  @relation(fields: [facilityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
-  class    Class    @relation(fields: [classId], references: [id])
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") // DEFAULTを追加
-  deletedAt DateTime? @map("deleted_at")
-
-  // @@index([facilityId])
-  // @@index([classId])
+  @@index([deletedAt])
+  @@index([facilityId, classId]) // スタッフ検索最適化
   @@map("staffs")
 }
 
 model Post {
-  id                 String   @id @default(cuid()) // UUID化は後で
-  // id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  childId            String   @map("child_id") @db.Uuid
-  parentId           String   @map("parent_id") @db.Uuid
-  postDay            DateTime @map("post_day") @db.Date
-  pickUpPerson       String?  @map("pick_up_person")
-  temperature        String?
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  childId            String    @map("child_id") @db.Uuid
+  parentId           String    @map("parent_id") @db.Uuid
+  postDay            DateTime  @map("post_day") @db.Date
+  pickUpPerson       String?   @map("pick_up_person")
+  // 体温を数値型に変更（計算・範囲検索対応）
+  temperature        Decimal?  @db.Decimal(3, 1) // "36.5" → 36.5
+  // ステータス管理の追加
+  status             String?   @default("draft") // draft, submitted, reviewed等
   messages           String?
-  medicationRequired Boolean  @default(false) @map("medication_required")
-  typeOfMedication   String?  @map("type_of_medication")
-  timingOfMedication String?  @map("timing_of_medication")
+  medicationRequired Boolean   @default(false) @map("medication_required")
+  typeOfMedication   String?   @map("type_of_medication")
+  timingOfMedication String?   @map("timing_of_medication")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  deletedAt          DateTime? @map("deleted_at")
+  log                Log?
+  child              Child     @relation(fields: [childId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  parent             User      @relation(fields: [parentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  child  Child @relation(fields: [childId], references: [id], onDelete: Cascade)
-  parent User  @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  log    Log?
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") // DEFAULTを追加
-  deletedAt DateTime? @map("deleted_at")
-
-  // @@index([childId, postDay])
-  // @@index([parentId])
+  @@unique([childId, postDay]) // 同一子ども・同一日の重複投稿防止（要件次第）
+  @@index([postDay]) // 日付検索
+  @@index([deletedAt])
+  @@index([childId, postDay, deletedAt]) // 子どもの投稿履歴最適化
+  @@index([parentId])
+  @@index([temperature]) // 体温検索・統計処理最適化
+  @@index([status]) // ワークフロー管理最適化
   @@map("posts")
 }
 
 model Log {
-  id       String  @id @default(cuid()) // UUID化は後で
-  // id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  postId   String  @unique @map("post_id") @db.Uuid
-  scenes   String?
-  photoUrl String? @map("photo_url")
-  staff    String?
-
-  post   Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  events Event[]
-
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId    String    @unique(map: "logs_postId_key") @map("post_id") @db.Uuid
+  scenes    String?
+  photoUrl  String?   @map("photo_url")
+  staff     String?
   createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") // DEFAULTを追加
+  updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
+  events    Event[]
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
+  @@index([deletedAt])
+  @@index([createdAt]) // 時系列検索
   @@map("logs")
 }
 
 model Event {
-  id                  String   @id @default(cuid()) // UUID化は後で
-  // id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  logId               String   @map("log_id") @db.Uuid
-  eventOccurrenceTime DateTime @map("event_occurrence_time")
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  logId               String    @map("log_id") @db.Uuid
+  eventOccurrenceTime DateTime  @map("event_occurrence_time")
   title               String
   details             String?
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  deletedAt           DateTime? @map("deleted_at")
+  log                 Log       @relation(fields: [logId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  log Log @relation(fields: [logId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") // DEFAULTを追加
-  deletedAt DateTime? @map("deleted_at")
-
-  // @@index([logId, eventOccurrenceTime])
+  @@index([deletedAt])
+  @@index([eventOccurrenceTime]) // 全体の時間検索用
+  @@index([logId, eventOccurrenceTime]) // 特定Logの時系列取得用（追加推奨）
   @@map("events")
 }
