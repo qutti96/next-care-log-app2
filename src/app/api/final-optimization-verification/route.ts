@@ -6,7 +6,17 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  try {
+  console.log('🔍 Current NODE_ENV:', process.env.NODE_ENV); // 診断用
+  // 🛡️ 本番環境ガード
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'この検証エンドポイントは開発環境でのみ利用可能です。',
+        environment: process.env.NODE_ENV
+      }, { status: 403 })
+    }
+
+    try {
     // 1. 基本データ作成テスト
     const testFacility = await prisma.facility.create({
       data: { name: "最終検証施設-" + Date.now() }
@@ -216,6 +226,14 @@ export async function GET() {
 
 // POST メソッドも追加（体温検索機能）
 export async function POST(request: NextRequest) {
+  // POST メソッドにも同じガードを追加
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ 
+      success: false, 
+      error: 'この検証エンドポイントは開発環境でのみ利用可能です。' 
+    }, { status: 403 })
+  }
+
   try {
     const body = await request.json()
     const { minTemperature = 37.5 } = body
