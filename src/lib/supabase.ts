@@ -76,7 +76,7 @@ export const supabase = {
       return createClientSupabase().auth.onAuthStateChange.bind(createClientSupabase().auth)
     }
   },
-  from(table: string) {
+  from<T extends keyof Database['public']['Tables'] & string>(table: T) {
     return createClientSupabase().from(table)
   }
 }
@@ -117,7 +117,6 @@ export type UserUpdate = Database['public']['Tables']['users']['Update']
  */
 export async function getCurrentUserProfile(): Promise<UserProfile | null> {
   const supabase = createClientSupabase()// シングルトンクライアント使用
-  const client = createClientSupabase()
 
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser()

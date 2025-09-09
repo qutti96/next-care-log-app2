@@ -2,6 +2,7 @@
 import { prisma } from '@/lib/prisma';
 import { ChildFormData, ChildWithAge } from '@/types';
 import { getDetailedAge } from '@/lib/utils/dateUtils';
+import type { Prisma } from '@prisma/client';
 
 //子ども新規登録(create)
 export async function createChild(data: ChildFormData & {parentId: string}): Promise<ChildWithAge> {
@@ -82,7 +83,7 @@ export async function getChildById(id: string, parentId: string): Promise<ChildW
 export async function updateChild(
   id: string,
   parentId: string,
-  data: UpdateChildInput
+  data: Prisma.ChildUpdateInput //Prismaの型を活用
 ): Promise<ChildWithAge> {
   // 所有権チェック（セキュリティ重要）
   const existingChild = await prisma.child.findFirst({
@@ -93,11 +94,21 @@ export async function updateChild(
     throw new Error('子どもが見つからないか、編集権限がありません');
   }
 
-  // データ更新（birthdayがある場合のみDate変換）
-  const updateData = {
+  // データ更新（birthdayがある場合のみDate変換、安全に型分岐）
+  const birthdayPatch: Partial<Pick<Prisma.ChildUpdateInput, 'birthday'>> = {}
+  if (typeof data.birthday === 'string' || data.birthday instanceof Date) {
+    birthdayPatch.birthday = new Date(data.birthday)
+  } else if (data.birthday && typeof data.birthday === 'object' && 'set' in data.birthday) {
+    const v = (data.birthday as Prisma.DateTimeFieldUpdateOperationsInput).set
+    if (typeof v === 'string' || v instanceof Date) {
+      birthdayPatch.birthday = { set: new Date(v as string | number | Date) }
+    }
+  }
+
+  const updateData: Prisma.ChildUpdateInput = {
     ...data,
-    ...(data.birthday && { birthday: new Date(data.birthday) }),
-  };
+    ...birthdayPatch,
+  }
 
   const updatedChild = await prisma.child.update({
     where: { id },
@@ -150,6 +161,15 @@ export async function deleteChild(id: string, parentId: string): Promise<ChildWi
 
 // 🆕 復元機能（管理者向け・オプション）
 export async function restoreChild(id: string, parentId: string): Promise<ChildWithAge> {
+  // 所有権チェック（削除済みでも同様に所有者のみ復元可能）
+  const existingChild = await prisma.child.findFirst({
+    where: { id, parentId }
+  })
+
+  if (!existingChild) {
+    throw new Error('子どもが見つからないか、復元権限がありません')
+  }
+
   const restoredChild = await prisma.child.update({
     where: { id },
     data: {
