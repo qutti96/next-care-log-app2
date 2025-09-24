@@ -176,7 +176,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 保護者ログイン画面
 
-/user/login/
+/users/login/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -188,7 +188,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### staffログイン画面
 
-/staff/login/
+/staffs/login/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -200,7 +200,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 保護者新規登録画面
 
-/user/signup/
+/users/signup/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -210,7 +210,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### staff新規登録画面
 
-/staff/signup/
+/staffs/signup/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -220,7 +220,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 保護者プロフィール登録画面
 
-/user/[id]/create
+/users/[id]/create
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -238,7 +238,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 保護者プロフィール編集画面
 
-/user/[id]/edit
+/users/[id]/edit
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -256,7 +256,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 保護者プロフィール登録・編集完了画面
 
-/user/[id]/complete
+/users/[id]/complete
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -265,7 +265,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 保護者プロフィール画面
 
-/user/[id]/
+/users/[id]/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -282,7 +282,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 子どもプロフィール登録画面
 
-/user-children/[id]/create
+/users-children/[id]/create
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -300,7 +300,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 子どもプロフィール編集画面
 
-/user-children/[id]/edit
+/users-children/[id]/edit
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -318,7 +318,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 子どもプロフィール画面
 
-/user-children/[id]/
+/users-children/[id]/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -336,7 +336,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 子どもプロフィール登録完了画面
 
-/user-children/[id]/complete
+/users-children/[id]/complete
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -345,7 +345,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### スタッフプロフィール登録画面
 
-/staff/[id]/create
+/staffs/[id]/create
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -358,7 +358,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### スタッフプロフィール編集画面
 
-/staff/[id]/edit
+/staffs/[id]/edit
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -371,7 +371,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### スタッフプロフィール登録完了画面
 
-/staff/[id]/complete
+/staffs/[id]/complete
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -380,7 +380,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### スタッフプロフィール一覧画面
 
-/staff/[id]/
+/staffs/[id]/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -402,7 +402,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 子ども別登園連絡一覧画面
 
-/[user-children-id]/childcare-log/
+/[users-children-id]/childcare-log/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -413,7 +413,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 登園連絡登録画面
 
-/[user-children-id]/childcare-log/create
+/[users-children-id]/childcare-log/create
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -442,7 +442,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 登園連絡編集画面
 
-/[user-children-id]/childcare-log/[post-id]/edit
+/[users-children-id]/childcare-log/[post-id]/edit
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -470,7 +470,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 登園連絡一覧画面
 
-/[user-children-id]/childcare-log/[post-id]/
+/[users-children-id]/childcare-log/[post-id]/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -501,7 +501,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 登園連絡削除完了画面
 
-/[user-children-id]/childcare-log/complete
+/[users-children-id]/childcare-log/complete
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -510,7 +510,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### クラス管理画面
 
-/class/
+/classes/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -521,7 +521,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### クラス詳細画面
 
-/class/[class-id]/
+/classes/[class-id]/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -532,7 +532,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 施設情報管理画面
 
-/facility/[facility-id]/
+/facilities/[facility-id]/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -543,7 +543,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 生活ログ登録画面
 
-/[user-children-id]/childcare-log/[post-id]/log/
+/[users-children-id]/childcare-log/[post-id]/log/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -562,7 +562,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 保育中の様子登録画面
 
-/[user-children-id]/childcare-log/[post-id]/condition/create
+/[users-children-id]/childcare-log/[post-id]/condition/create
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -575,7 +575,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 保育中の様子編集画面
 
-/[user-children-id]/childcare-log/[post-id]/condition/edit
+/[users-children-id]/childcare-log/[post-id]/condition/edit
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
