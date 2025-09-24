@@ -50,3 +50,9 @@ next-env.d.ts
 
 # バックアップファイル
 *.backup
+
+# SQLバックアップファイルを除外
+*.sql
+
+doc/pre.md
+supabase/.temp/
