@@ -1,7 +1,7 @@
 'use client'
 import { useAuthContext } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { createClientSupabase } from '@/lib/supabase'
+import { getBrowserSupabase } from '@/lib/supabaseBrowser'
 
 // import Link from 'next/link'
 
@@ -9,7 +9,7 @@ export default function Home() {
 
   const { user, profile, loading } = useAuthContext()
   const router = useRouter()
-  const supabase = createClientSupabase()
+  const supabase = getBrowserSupabase()
 
   const handleLogout = async () => {
     await supabase.auth.signOut()

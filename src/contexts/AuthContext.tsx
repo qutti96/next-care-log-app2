@@ -4,7 +4,9 @@
 import React, { createContext, useContext, ReactNode } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { User } from '@supabase/supabase-js'
-import { UserProfile } from '@/lib/supabase'
+import type { Database } from '@/types/supabase'
+
+type UserProfile = Database['public']['Tables']['users']['Row']
 
 interface AuthContextType {
   user: User | null

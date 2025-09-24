@@ -3,7 +3,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
-import { createClientSupabase, supabaseAdmin, UserProfile } from '@/lib/supabase'
+import { getBrowserSupabase, UserProfile } from '@/lib/supabaseBrowser'
 
 // 型安全なユーザープロファイル型
 // type UserProfile = Database['public']['Tables']['users']['Row']
@@ -23,7 +23,7 @@ export function useAuth(): AuthState {
 
   // 🎯 統一されたSupabaseクライアントをフックの最上位で取得
   // これがこのフック内で使用される唯一のクライアントインスタンス
-  const supabase = createClientSupabase()
+  const supabase = getBrowserSupabase()
 
   // fetchUserProfile を useCallback でメモ化
   const fetchUserProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {

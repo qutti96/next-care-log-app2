@@ -47,3 +47,6 @@ next-env.d.ts
 
 # 環境変数ファイル
 /prisma/.env
+
+# バックアップファイル
+*.backup
