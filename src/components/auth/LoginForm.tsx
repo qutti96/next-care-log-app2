@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getBrowserSupabase } from '@/lib/supabaseBrowser'
-import type { User } from '@supabase/supabase-js'
 
 interface LoginFormProps {
   redirectTo?: string
@@ -13,7 +12,7 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({
-  redirectTo = '/dashboard',
+  redirectTo = '/',
   className = '',
   // onSuccess,
   // onError

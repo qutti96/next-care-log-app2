@@ -7,7 +7,7 @@ export default function LoginPage({ searchParams }: { searchParams: SearchParams
   // URLパラメータをサーバー側で安全に取得
   const redirectTo = typeof searchParams?.redirectTo === 'string'
     ? searchParams.redirectTo
-    : '/dashboard'
+    : '/'
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
