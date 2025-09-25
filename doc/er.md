@@ -4,6 +4,7 @@
 
 - id (PK,UUID)
 - name(TEXT)
+- nameKana(TEXT,NULLABLE)
 - tel(TEXT,NULLABLE)
 - email (TEXT,UNIQUE)
 - password(TEXT,NULLABLE)
@@ -121,6 +122,7 @@ erDiagram
   Users {
     uuid id PK "保護者ID"
     string name "保護者名"
+    string name_kana "保護者名かな"
     string tel "保護者電話番号"
     string email UK "メールアドレス"
     string password "パスワード（nullable）"
