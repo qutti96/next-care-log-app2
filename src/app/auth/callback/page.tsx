@@ -1,10 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getBrowserSupabase } from '@/lib/supabaseBrowser'
 
-export default function AuthCallbackPage() {
+// SSG回避のため動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
+function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = getBrowserSupabase()
@@ -15,6 +18,13 @@ export default function AuthCallbackPage() {
     const handleAuthCallback = async () => {
       try {
         console.log('🔄 認証コールバック処理開始')
+
+        // OAuth プロバイダーからのエラーを早期チェック
+        const oauthError = searchParams.get('error')
+        if (oauthError) {
+          setError(`認証に失敗しました: ${oauthError}`)
+          return
+        }
 
         // URLからコードを取得してセッションに交換
         const code = searchParams.get('code')
@@ -55,7 +65,7 @@ export default function AuthCallbackPage() {
               tel: null,
               photo_url: null,
             },
-            { 
+            {
               onConflict: 'id',
               ignoreDuplicates: false
             }
@@ -67,7 +77,7 @@ export default function AuthCallbackPage() {
         }
 
         console.log('✅ usersテーブル作成成功 - プロフィール登録へ')
-        
+
         // プロフィール登録画面にリダイレクト
         router.replace(`/users/${user.id}/create`)
 
@@ -117,4 +127,23 @@ export default function AuthCallbackPage() {
   }
 
   return null
+}
+
+function AuthCallbackLoading() {
+  return (
+    <div className="container mx-auto py-16 text-center">
+      <div className="flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mr-3"></div>
+        <span className="text-lg">認証処理を準備中...</span>
+      </div>
+    </div>
+  )
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={<AuthCallbackLoading />}>
+      <AuthCallbackContent />
+    </Suspense>
+  )
 }
