@@ -8,7 +8,7 @@ export interface UserProfile {
   id: string                    // PK, UUID (Supabase Auth UID)
   name: string
   nameKana?: string | null      // DB互換性のためnull許容
-  tel?: string | null           // DB互換性のためnull許容  
+  tel?: string | null           // DB互換性のためnull許容
   email: string                 // UNIQUE
   password?: string | null      // Supabase Authが管理、DBはnull許容
   photoUrl?: string | null      // DB互換性のためnull許容
@@ -53,8 +53,9 @@ export interface ProfileFormData {
   tel?: string
   photoUrl?: string
   children: Array<{
-    id?: string
+    id?: string //既存の子どもの場合
     name: string
+    tempId?: string; // フォーム用一時ID
   }>
 }
 
@@ -100,3 +101,30 @@ export function userProfileToUpsertPayload(profile: UserProfile): UserUpsertPayl
     updated_at: now
   }
 }
+
+/**
+ * 保護者プロフィールフォーム専用型
+ * React Hook Form完全対応
+ */
+export interface UserProfileFormData {
+  name: string
+  nameKana?: string
+  tel?: string
+  photoUrl?: string  // 既存との互換性維持（storage pathとして使用）
+  children: Array<{
+    id?: string        // 既存の子どもの場合（編集時）
+    name: string       // 必須フィールド
+    tempId?: string    // フォーム内での一意識別用（新規追加時）
+  }>
+}
+
+/**
+ * Server Actions統一レスポンス型
+ */
+export interface ActionResponse<T = void> {
+  success: boolean
+  data?: T
+  error?: string
+  fieldErrors?: Record<string, string[]>
+}
+
