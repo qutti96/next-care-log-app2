@@ -44,7 +44,7 @@ export default function SignUpForm({
     })
 
     // 権限テスト：単純なSELECTクエリで接続確認
-    const { data: testData, error: testError } = await supabase
+    const { error: testError } = await supabase
     .from('users')
     .select('id')
     .limit(1)
