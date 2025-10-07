@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import animate from "tailwindcss-animate";
 
 const config: Config = {
     darkMode: ["class"],
@@ -55,9 +56,29 @@ const config: Config = {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
-  		}
-  	}
+  		},
+			keyframes: {
+        // Toast用アニメーション（自動追加されているか確認）
+        "hide": {
+          from: { opacity: "1" },
+          to: { opacity: "0" },
+        },
+        "slide-in": {
+          from: { transform: "translateX(calc(100% + var(--viewport-padding)))" },
+          to: { transform: "translateX(0)" },
+        },
+        "swipe-out": {
+          from: { transform: "translateX(var(--radix-toast-swipe-move-x))" },
+          to: { transform: "translateX(calc(100% + var(--viewport-padding)))" },
+        },
+      },
+      animation: {
+        "hide": "hide 100ms ease-in forwards",
+        "slide-in": "slide-in 150ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "swipe-out": "swipe-out 100ms ease-out forwards",
+      },
+    },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [animate],
 };
 export default config;
