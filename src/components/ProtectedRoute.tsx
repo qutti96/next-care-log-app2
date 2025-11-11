@@ -1,7 +1,7 @@
 // 実践的な認証システム実装 ステップ6：プロテクトルートコンポーネントの実装
 
 'use client'
-import { useAuthContext } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -11,12 +11,12 @@ interface ProtectedRouteProps {
   redirectTo?: string
 }
 
-export function ProtectedRoute({ 
-  children, 
+export function ProtectedRoute({
+  children,
   allowedRoles = ['parent', 'staff', 'manager'],
-  redirectTo = '/user/login'
+  redirectTo = '/users/login'
 }: ProtectedRouteProps) {
-  const { user, profile, loading } = useAuthContext()
+  const { user, profile, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -27,7 +27,8 @@ export function ProtectedRoute({
         return
       }
 
-      if (profile && !allowedRoles.includes(profile.role as any)) {
+      const role = (profile as unknown as { role?: 'parent' | 'staff' | 'manager' }).role
+      if (role && !allowedRoles.includes(role)) {
         // 権限不足の場合は適切なページへリダイレクト
         router.push('/unauthorized')
         return
@@ -43,8 +44,11 @@ export function ProtectedRoute({
     )
   }
 
-  if (!user || (profile && !allowedRoles.includes(profile.role as any))) {
-    return null
+  {
+    const role = (profile as unknown as { role?: 'parent' | 'staff' | 'manager' })?.role
+    if (!user || (role && !allowedRoles.includes(role))) {
+      return null
+    }
   }
 
   return <>{children}</>
