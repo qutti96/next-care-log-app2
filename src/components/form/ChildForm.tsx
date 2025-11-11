@@ -4,10 +4,9 @@ import { childFormSchema, ChildFormValues } from '@/lib/validations/child';
 
 interface ChildFormProps {
   onSubmit: (values: ChildFormValues) => void;
-  classes: { id: string; name: string }[];
 }
 
-export function ChildForm({ onSubmit, classes }: ChildFormProps) {
+export function ChildForm({ onSubmit }: ChildFormProps) {
   const form = useForm<ChildFormValues>({
     resolver: zodResolver(childFormSchema),
   });

@@ -1,6 +1,5 @@
 // lib/validations/child.ts
 import * as z from 'zod';
-//import { z } from 'zod';
 
 export const childFormSchema = z.object({
   name: z.string().min(1, '名前は必須です').max(50, '名前は50文字以内で入力してください'),
@@ -42,3 +41,7 @@ export const childFormSchema = z.object({
 export type ChildFormValues = z.infer<typeof childFormSchema>;
 // 既存のchildFormSchemaに加えて
 export const updateChildSchema = childFormSchema.partial(); // 全フィールドをオプショナルに
+
+// 保護者プロフィール機能との互換性用エクスポート
+export type ParentChildFormValues = ChildFormValues
+export const parentChildFormSchema = childFormSchema
