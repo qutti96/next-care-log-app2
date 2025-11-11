@@ -1,9 +1,8 @@
-// 実践的な認証システム実装 認証コンテキストプロバイダーの実装
-
 'use client'
-import React, { createContext, useContext, ReactNode } from 'react'
-import { useAuth } from '@/hooks/useAuth'
-import { User } from '@supabase/supabase-js'
+
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from 'react'
+import { getBrowserSupabase } from '@/lib/supabaseBrowser'
+import type { User } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
 
 type UserProfile = Database['public']['Tables']['users']['Row']
@@ -12,43 +11,129 @@ interface AuthContextType {
   user: User | null
   profile: UserProfile | null
   loading: boolean
-  error: string | null
+  signOut: () => Promise<void>
   isParent: boolean
   isStaff: boolean
   isManager: boolean
+  isAdmin: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-interface AuthProviderProps {
-  children: ReactNode
-}
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [loading, setLoading] = useState(true)
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const { user, profile, loading, error } = useAuth()
+  // ★ Enum型対応のロール判定
+  const isParent = profile?.role === 'PARENT'
+  const isStaff = profile?.role === 'STAFF'
+  const isManager = profile?.role === 'MANAGER'
+  const isAdmin = profile?.role === 'ADMIN'
 
-  // ロールベースの便利なフラグ（要件定義書の権限設計対応）
-  const isParent = profile?.role === 'parent'
-  const isStaff = profile?.role === 'staff'
-  const isManager = profile?.role === 'manager'
+  const supabase = useMemo(() => getBrowserSupabase(), [])
+
+  const fetchProfile = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Profile fetch error:', error)
+        return
+      }
+
+      setProfile(data)
+    } catch (error) {
+      console.error('Profile fetch error:', error)
+    }
+  }, [supabase])
+
+  useEffect(() => {
+    let isMounted = true
+
+    const initializeAuth = async () => {
+      try {
+        // 初期セッション取得
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError)
+        } else if (session?.user && isMounted) {
+          setUser(session.user)
+          await fetchProfile(session.user.id)
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error)
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    // 認証状態変更の監視
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!isMounted) return
+
+        if (session?.user) {
+          setUser(session.user)
+          await fetchProfile(session.user.id)
+        } else {
+          setUser(null)
+          setProfile(null)
+        }
+        setLoading(false)
+      }
+    )
+
+    initializeAuth()
+
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [fetchProfile, supabase])
+
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Sign out error:', error)
+      } else {
+        setUser(null)
+        setProfile(null)
+      }
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
+  }
 
   const value: AuthContextType = {
     user,
     profile,
     loading,
-    error,
+    signOut,
     isParent,
     isStaff,
     isManager,
+    isAdmin,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export function useAuthContext(): AuthContextType {
+// ★ useAuth hookをここで定義（循環参照回避）
+export const useAuth = () => {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error('useAuthContext must be used within an AuthProvider')
+    throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
 }
+
+export default AuthProvider
