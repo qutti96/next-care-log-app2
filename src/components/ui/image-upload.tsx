@@ -23,6 +23,13 @@ interface ImageUploadProps {
    * 現在のユーザーID (RLSポリシーとパス生成に使用)
    */
   userId: string;
+
+  /**
+   * Supabase Storageのバケット名
+   */
+  bucketName?: string; // ★ 追加（オプショナルで既存コードとの互換性確保）
+  /**
+
   /**
    * コンポーネントの無効化状態
    */
@@ -36,7 +43,8 @@ interface ImageUploadProps {
 export function ImageUpload({ 
   value, 
   onChange, 
-  userId, 
+  userId,
+  bucketName = 'avatars',
   disabled = false,
   className = ""
 }: ImageUploadProps) {
