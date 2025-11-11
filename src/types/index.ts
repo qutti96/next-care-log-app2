@@ -13,11 +13,12 @@ import {
   Child,
   Facility,
   Class,
-  Manager,
-  Staff,
-  Post,
-  Log,
-  Event
+   // 以下は将来の機能実装時に有効化
+//  Manager,
+//  Staff,
+//  Post,
+//  Log,
+//  Event
 } from '@prisma/client';
 
 // 追加の共通型定義
@@ -90,16 +91,16 @@ export interface UserWithChildren extends User {
   children: ChildWithClass[];
 }
 
-export interface PostWithRelations extends Post {
-  child: ChildWithClass;
-  parent: User;
-  log?: LogWithEvents;
-}
+// export interface PostWithRelations extends Post {
+//   child: ChildWithClass;
+//   parent: User;
+//   log?: LogWithEvents;
+// }
 
-export interface LogWithEvents extends Log {
-  events: Event[];
-  post?: PostWithRelations;
-}
+// export interface LogWithEvents extends Log {
+//   events: Event[];
+//   post?: PostWithRelations;
+// }
 
 // === ドロップダウン用の型定義 ===
 export interface SelectOption {
@@ -107,8 +108,8 @@ export interface SelectOption {
   name: string;
 }
 
-export interface ClassOption extends SelectOption {}
-export interface FacilityOption extends SelectOption {}
+export type ClassOption = SelectOption
+export type FacilityOption = SelectOption
 
 // === 検索・フィルタリング用の型定義 ===
 export interface ChildSearchParams {
