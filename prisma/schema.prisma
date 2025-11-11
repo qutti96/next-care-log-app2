@@ -8,20 +8,30 @@ datasource db {
   // shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
+// 将来のロール機能に備えたEnum定義
+enum UserRole {
+  PARENT
+  STAFF
+  MANAGER
+  ADMIN
+}
+
 model User {
   id        String    @id @db.Uuid // Supabase AuthのUIDを直接使用
   name      String
   nameKana  String?   @map("name_kana") // ← 追加
   tel       String?
   email     String    @unique
-  password  String? // Supabase Authが管理するため実質未使用
+  //password  String? // Supabase Authが管理するため実質未使用
   photoUrl  String?   @map("photo_url")
+  role      UserRole  @default(PARENT) // ユーザーロール別にアクセス制御を設定するため
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
   children  Child[]
   posts     Post[]
 
+  @@index([role]) // ロール検索最適化
   @@index([deletedAt]) // ソフトデリート対応
   @@map("users")
 }
