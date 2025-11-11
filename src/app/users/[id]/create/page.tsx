@@ -1,36 +1,60 @@
 // app/users/[id]/create/page.tsx
-export default function CreateProfilePage({ 
-  params 
-}: { 
-  params: { id: string } 
-}) {
-  return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8">保護者プロフィール登録</h1>
-        
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-          <h2 className="text-lg font-semibold text-green-800 mb-2">
-            🎉 認証システム統合完全成功！
-          </h2>
-          <p className="text-green-600 mb-4">
-            ユーザーID: <code className="bg-green-100 px-2 py-1 rounded text-sm font-mono">{params.id}</code>
-          </p>
-          <p className="text-sm text-green-700">
-            この画面が表示されていることで、認証とデータベースの統合が完全に成功していることが確認できます。
-          </p>
-        </div>
+// 保護者プロフィール作成ページ
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="font-semibold text-blue-800 mb-3">🚀 次のステップ:</h3>
-          <ul className="text-sm text-blue-700 space-y-1">
-            <li>• 詳細なプロフィール登録フォームの実装</li>
-            <li>• react-hook-form + Zodによるフォームバリデーション</li>
-            <li>• 氏名カナ、電話番号の入力フィールド追加</li>
-            <li>• 動的子ども情報管理機能の実装</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  )
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+import { redirect } from 'next/navigation';
+import { createServerSupabase } from '@/lib/supabase-server';
+import { ProfileForm } from '@/components/profile/profile-form';
+
+interface CreateProfilePageProps {
+  params: { id: string };
+}
+
+export default async function CreateProfilePage({ params }: CreateProfilePageProps) {
+  console.log('🔍 CreateProfilePage: Starting for user ID:', params.id)
+  const supabase = createServerSupabase();
+  
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser()
+
+    console.log('🔍 CreateProfilePage: Auth check:', {
+      hasUser: !!user,
+      userId: user?.id,
+      paramId: params.id,
+      error: error?.message,
+    })
+
+    if (error) {
+      console.error('❌ CreateProfilePage: Auth error:', error.message)
+      redirect('/users/login')
+    }
+    
+    if (!user) {
+      console.log('❌ CreateProfilePage: No user found, redirecting to login')
+      redirect('/users/login')
+    }
+
+    if (user.id !== params.id) {
+      console.warn('⚠️ CreateProfilePage: User ID mismatch!', { 
+        authUserId: user.id, 
+        paramId: params.id 
+      })
+      redirect('/users/login')
+    }
+
+    console.log('✅ CreateProfilePage: User authenticated successfully:', user.id)
+
+    return (
+      <ProfileForm 
+        userId={user.id}
+        userEmail={user.email!}
+        mode="create"
+      />
+    )
+  } catch (error) {
+    console.error('💥 CreateProfilePage: Unexpected error:', error)
+    redirect('/users/login')
+  }
 }
