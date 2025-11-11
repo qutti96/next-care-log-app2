@@ -9,8 +9,8 @@ export async function GET() {
   console.log('🔍 Current NODE_ENV:', process.env.NODE_ENV); // 診断用
   // 🛡️ 本番環境ガード
     if (process.env.NODE_ENV === 'production') {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         error: 'この検証エンドポイントは開発環境でのみ利用可能です。',
         environment: process.env.NODE_ENV
       }, { status: 403 })
@@ -28,10 +28,12 @@ export async function GET() {
     
     const testUser = await prisma.user.create({
       data: {
-        name: "検証保護者",
+        id: crypto.randomUUID(),
+        name: "Test User",
         email: `verify-${Date.now()}@example.com`,
-        password: "verify123"
-      }
+        // password: "verify123"
+        role: "PARENT",
+      },
     })
     
     const testChild = await prisma.child.create({
