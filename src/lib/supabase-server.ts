@@ -1,4 +1,9 @@
 // src/lib/supabase-server.ts
+// supabase-server.tsの役割：
+// サーバーコンポーネントやRoute HandlerでのSupabaseクライアント提供
+// リクエストスコープでの認証状態取得
+// 特定のサーバーサイドビジネスロジック実行
+
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import type { Database } from '@/types/supabase'
@@ -84,7 +89,7 @@ export async function getCurrentUserProfileServer(): Promise<Database['public'][
  *              ロール管理を実装する場合はPrismaスキーマとDBにroleカラムを追加してください。
  */
 
-export async function checkUserRole(allowedRoles: string[]): Promise<boolean> {
+export async function checkUserRole(_allowedRoles: string[]): Promise<boolean> {
   console.warn('checkUserRole: usersテーブルにroleカラムが未実装のため常にfalseを返します')
   return false
 
