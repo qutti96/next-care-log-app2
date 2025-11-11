@@ -1,6 +1,5 @@
 // src/lib/storage.ts
 import { getBrowserSupabase } from '@/lib/supabaseBrowser'
-import { createServerSupabase } from '@/lib/supabase-server'
 import { ImageUploadResult } from '@/types/storage'
 import { AVATAR_ALLOWED_MIME, AVATAR_MAX_SIZE } from '@/types/storage'
 
@@ -39,22 +38,6 @@ export async function getSignedAvatarUrlClient(
 }
 
 /**
- * Server用署名付きURL生成（RSC/Server Actions）
- */
-export async function getSignedAvatarUrlServer(
-  path: string, 
-  expiresInSec: number = 60 * 60
-): Promise<string> {
-  const supabase = createServerSupabase()
-  const { data, error } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(path, expiresInSec)
-  
-  if (error) throw error
-  return data.signedUrl
-}
-
-/**
  * ファイルアップロード（クライアント用）
  */
 export async function uploadAvatarFile(
@@ -64,7 +47,7 @@ export async function uploadAvatarFile(
   const supabase = getBrowserSupabase()
   
   // バリデーション
-  if (!file.type.startsWith(AVATAR_ALLOWED_MIME)) {
+  if (!AVATAR_ALLOWED_MIME.test(file.type)) {
     throw new Error('画像ファイルを選択してください')
   }
   
