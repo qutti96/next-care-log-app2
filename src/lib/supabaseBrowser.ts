@@ -5,7 +5,10 @@ export {}
 // import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createBrowserClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/supabase' // 🚀 型統合
 
+// 🚀 Database型付きSupabaseClient
+type TypedSupabaseClient = SupabaseClient<Database>
 
 // HMR対応グローバルシングルトン
 type SupabaseGlobal = typeof globalThis & { __supabaseBrowserInstance?: SupabaseClient }
@@ -14,7 +17,7 @@ const g = globalThis as SupabaseGlobal
 // シングルトンパターンでクライアントを管理
 // let client: SupabaseClient | null = null
 
-export function getBrowserSupabase(): SupabaseClient {
+export function getBrowserSupabase(): TypedSupabaseClient {
   // HMRでも保持されるグローバルインスタンスをチェック
   if (g.__supabaseBrowserInstance) {
     if (process.env.NODE_ENV === 'development') {
@@ -59,10 +62,10 @@ export function getBrowserSupabase(): SupabaseClient {
     // })
 
   // Next.js App Router最適化クライアント作成
-  g.__supabaseBrowserInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  g.__supabaseBrowserInstance = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
-      storageKey: 'care-log-app-auth',    // 独自キーで競合完全回避
-      flowType: 'pkce',                   // PKCE認証フロー（セキュリティ強化）
+      //storageKey: 'care-log-app-auth',    // 独自キーで競合完全回避　修正：storageKeyを削除してデフォルトのクッキー命名を使用
+      //flowType: 'pkce',                   // PKCE認証フロー（セキュリティ強化）
       persistSession: true,               // セッション永続化
       autoRefreshToken: true,             // トークン自動更新
       detectSessionInUrl: true,           // URLからセッション検出
@@ -77,8 +80,8 @@ export function getBrowserSupabase(): SupabaseClient {
   }
 
   if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Supabaseブラウザクライアント作成完了（App Router最適化版）')
-    }
+    console.log('✅ 標準Cookie名対応Supabaseクライアント作成完了')
+  }
 
   // return client
   return g.__supabaseBrowserInstance!
@@ -93,14 +96,14 @@ export function getSupabaseAuth() {
 // セッション管理のヘルパー関数
 export async function getCurrentUser() {
   const supabase = getBrowserSupabase()
-  const { data: { user }, error } = await supabase.auth.getUser()
+  const { data: { session }, error } = await supabase.auth.getSession()
 
   if (error) {
-    console.error('Error getting current user:', error)
+    console.error('Error getting current session:', error)
     return null
   }
 
-  return user
+  return session?.user?? null
 }
 
 // サインアウトのヘルパー関数
