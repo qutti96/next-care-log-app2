@@ -1,23 +1,20 @@
 'use client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { getBrowserSupabase } from '@/lib/supabaseBrowser'
 import Link from 'next/link'
 import { User, FileText, LogOut, AlertCircle } from 'lucide-react'
 
 
 export default function Home() {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, signOut } = useAuth()
   const router = useRouter()
-  const supabase = getBrowserSupabase()
   // プロフィール登録状況の判定
   const hasProfile = Boolean(profile?.name)
   const role = profile?.role
 
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/users/login')
+    await signOut()   // 🚀 修正：AuthContextのsignOutを使用
   }
 
   if (loading) {
