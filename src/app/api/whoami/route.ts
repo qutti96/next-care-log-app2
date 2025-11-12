@@ -29,4 +29,8 @@ export async function GET() {
       timestamp: new Date().toISOString()
     })
   }
+
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ message: 'Not found' }, { status: 404 })
+  }
 }
