@@ -60,7 +60,7 @@ export default function SignUpForm({
       id: user.id,
       email: user.email!,
       name: name,
-      password: null,
+      // password: null, Supabaseで管理しているから
       name_kana: null,
       tel: null,
       photo_url: null,

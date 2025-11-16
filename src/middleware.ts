@@ -11,6 +11,10 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
+// 🚀 追加：ログレベルのフォールバック
+const LOG_LEVEL = process.env.MIDDLEWARE_LOG_LEVEL ??
+  (process.env.NODE_ENV === 'development' ? 'debug' : 'error')
+
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
 
@@ -36,8 +40,8 @@ export async function middleware(req: NextRequest) {
   // 🚀 getSession推奨（自動リフレッシュ対応）
   const { data: { session }, error } = await supabase.auth.getSession()
 
-  // デバッグログ（開発環境のみ）
-  if (process.env.NODE_ENV === 'development') {
+  // デバッグログ（LOG_LEVELで制御）
+  if (LOG_LEVEL === 'debug') {
     const allCookies = req.cookies.getAll()
     const supabaseCookies = allCookies.filter(c => c.name.startsWith('sb-'))
 
@@ -51,7 +55,12 @@ export async function middleware(req: NextRequest) {
     })
   }
 
-  return res
+  // 🚀 追加：エラーは本番でも出力（オプション）
+  if (error && LOG_LEVEL !== 'none') {
+    console.error('❌ Middleware Session Error:', error.message)
+  }
+
+return res
 }
 
 export const config = {

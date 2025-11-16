@@ -13,18 +13,24 @@ interface CreateProfilePageProps {
 }
 
 export default async function CreateProfilePage({ params }: CreateProfilePageProps) {
-  console.log('🔍 CreateProfilePage: Starting for user ID:', params.id)
+  // 🚀 修正1: 開発環境限定ログ
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 CreateProfilePage: Starting for user ID:', params.id)
+  }
+
   const supabase = createServerSupabase();
-  
+
   try {
     const { data: { user }, error } = await supabase.auth.getUser()
 
-    console.log('🔍 CreateProfilePage: Auth check:', {
-      hasUser: !!user,
-      userId: user?.id,
-      paramId: params.id,
-      error: error?.message,
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 CreateProfilePage: Auth check:', {
+        hasUser: !!user,
+        userId: user?.id,
+        paramId: params.id,
+        error: error?.message,
+      })
+    }
 
     if (error) {
       console.error('❌ CreateProfilePage: Auth error:', error.message)
@@ -32,22 +38,47 @@ export default async function CreateProfilePage({ params }: CreateProfilePagePro
     }
     
     if (!user) {
-      console.log('❌ CreateProfilePage: No user found, redirecting to login')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ CreateProfilePage: No user found, redirecting to login')
+      }
       redirect('/users/login')
     }
 
     if (user.id !== params.id) {
-      console.warn('⚠️ CreateProfilePage: User ID mismatch!', { 
-        authUserId: user.id, 
-        paramId: params.id 
+      console.warn('⚠️ CreateProfilePage: User ID mismatch!', {
+        authUserId: user.id,
+        paramId: params.id
       })
+      // 🚀 修正2: 権限エラー時は/unauthorizedへ
+      redirect('/unauthorized')
+    }
+
+    // 🚀 修正3: 既存プロフィールチェック追加
+    const { data: existingProfile, error: profileError } = await supabase
+      .from('users')
+      .select('name') // 🚀 パフォーマンス配慮：必要最小限のフィールド
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profileError) {
+      console.error('❌ CreateProfilePage: Profile fetch error:', profileError.message)
+      // プロフィール取得エラー時はログイン画面へ（安全策）
       redirect('/users/login')
     }
 
-    console.log('✅ CreateProfilePage: User authenticated successfully:', user.id)
+    if (existingProfile?.name) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('ℹ️ CreateProfilePage: Profile already exists, redirecting to edit')
+      }
+      redirect(`/users/${user.id}/edit`)
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ CreateProfilePage: User authenticated successfully:', user.id)
+    }
 
     return (
-      <ProfileForm 
+      <ProfileForm
         userId={user.id}
         userEmail={user.email!}
         mode="create"

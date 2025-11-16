@@ -1,9 +1,72 @@
 // Server Component（'use client'不要）
 import LoginForm from '@/components/auth/LoginForm'
+import { redirect } from 'next/navigation'
+import { createServerSupabase } from '@/lib/supabase-server'
+
+// 🚀 重要：動的レンダリング強制（静的最適化を防ぐ）
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 type SearchParams = { [key: string]: string | string[] | undefined }
 
-export default function LoginPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function LoginPage({ searchParams }: { searchParams: SearchParams }) {
+  const supabase = createServerSupabase()
+
+    // 🚀 修正：認証チェックのみをtry-catchで囲む
+    let user = null
+    let profile = null
+
+    try {
+    const { data: { user: authUser }, error } = await supabase.auth.getUser()
+
+    // デバッグログ（開発環境のみ）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 LoginPage: Auth check result:', { 
+        hasUser: !!authUser,
+        userId: authUser?.id,
+        error: error?.message
+      })
+    }
+
+    if (authUser && !error) {
+      user = authUser
+
+      // プロフィール状態確認
+      const { data: profileData } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', user.id)
+        .maybeSingle()
+
+        profile = profileData
+    }
+  } catch (error) {
+    console.error('❌ LoginPage: Auth check failed:', error)
+  }
+
+  // 🚀 重要：リダイレクト処理をtry-catchの外に配置
+  if (user && profile) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 LoginPage: Redirecting authenticated user:', {
+        userId: user.id,
+        hasProfile: !!profile?.name,
+        redirectTo: profile?.name ? 'edit' : 'create'
+      })
+    }
+
+    // redirect()の例外スローは正常動作 - try-catchで囲まない
+    if (profile?.name) {
+      redirect(`/users/${user.id}/edit`)
+    } else {
+      redirect(`/users/${user.id}/create`)
+    }
+  }
+
+  // 未認証ユーザーのみここに到達
+  if (process.env.NODE_ENV === 'development') {
+    console.log('✅ LoginPage: Showing login form for unauthenticated user')
+  }
+
   // URLパラメータをサーバー側で安全に取得
   const redirectTo = typeof searchParams?.redirectTo === 'string'
     ? searchParams.redirectTo
@@ -21,11 +84,7 @@ export default function LoginPage({ searchParams }: { searchParams: SearchParams
           </p>
         </div>
         
-        <LoginForm
-          redirectTo={redirectTo}
-          // onSuccess={(user) => console.log('Login successful:', user.email)}
-          // onError={(error) => console.error('Login failed:', error)}
-        />
+        <LoginForm redirectTo={redirectTo}/>
         
         <div className="text-center">
           <a
@@ -39,162 +98,3 @@ export default function LoginPage({ searchParams }: { searchParams: SearchParams
     </div>
   )
 }
-
-
-// export default function UserLoginPage() {
-//   const [formData, setFormData] = useState({
-//     email: '',
-//     password: '',
-//   })
-//   const [loading, setLoading] = useState(false)
-//   const [error, setError] = useState<string | null>(null)
-//   const [message, setMessage] = useState<string | null>(null)
-
-//   const router = useRouter()
-//   const searchParams = useSearchParams()
-
-//   //登録完了メッセージの表示
-//   useEffect(() => {
-//     const message = searchParams.get('message')
-//     if (message) {
-//       setMessage(message)
-//     }
-//   }, [searchParams])
-
-//   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-//     const { name, value } = e.target
-//     setFormData(prev => ({
-//       ...prev,
-//       [name]: value
-//     }))
-//   }
-
-//   const handleLogin = async (e: React.FormEvent) => {
-//     e.preventDefault()
-//     console.log('handleLogin called');
-//     setLoading(true)
-//     setError(null)
-
-//     try {
-//       console.log('before signInWithPassword');
-//       const {data, error } = await supabase.auth.signInWithPassword({
-//         email: formData.email,
-//         password: formData.password,
-//       })
-//       console.log('after signInWithPassword');
-//       console.log('signInWithPassword result:', { data, error })
-
-//       if (error) {
-//         setError(error.message)
-//       } else {
-//         console.log('✅ ログイン成功、遷移処理開始');
-//         // Step 1: 即座に遷移を試行
-//         console.log('🔄 遷移試行 1: router.replace');
-//         router.replace('/');
-
-//         // Step 2: 短い遅延後にrouter.pushを試行（フォールバック）
-//         setTimeout(() => {
-//           if(window.location.pathname === '/users/login'){
-//             console.log('🔄 遷移試行 2: router.push (300ms後)');
-//             router.push('/')
-//           }
-//         }, 300)
-//       }
-//       // Step 3: 中程度の遅延後に状態確認して遷移
-//       setTimeout(() => {
-//         if (window.location.pathname === '/users/login') {
-//           console.log('🔄 遷移試行 3: 状態確認後のrouter.push (800ms後)');
-//           router.push('/');
-//         }
-//       }, 800);
-//       // Step 4: 最終手段として強制遷移
-//       setTimeout(() => {
-//         if (window.location.pathname === '/users/login') {
-//           console.log('🔄 遷移試行 4: 強制遷移 window.location.href (1500ms後)');
-//           window.location.href = '/';
-//         }
-//       }, 1500);
-//     } catch (err) {
-//       console.error('Login error (catch):', err)
-//       setError('ログイン処理中にエラーが発生しました')
-//     } finally {
-//       // 遷移が開始されるまでローディング状態を維持
-//       // エラー時のみローディング解除
-//       if (error) {
-//         setLoading(false)
-//       }
-//     }
-//   }
-
-//   return (
-//     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-//       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-//         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-//           保護者ログイン
-//         </h2>
-        
-//         {message && (
-//           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4">
-//             {message}
-//           </div>
-//         )}
-
-//         <form onSubmit={handleLogin} className="space-y-4">
-//           <div>
-//             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-//               メールアドレス
-//             </label>
-//             <input
-//               type="email"
-//               id="email"
-//               name="email"
-//               value={formData.email}
-//               onChange={handleChange}
-//               required
-//               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-//               placeholder="example@email.com"
-//             />
-//           </div>
-          
-//           <div>
-//             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-//               パスワード
-//             </label>
-//             <input
-//               type="password"
-//               id="password"
-//               name="password"
-//               value={formData.password}
-//               onChange={handleChange}
-//               required
-//               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-//               placeholder="パスワード"
-//             />
-//           </div>
-
-//           {error && (
-//             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-//               <strong>エラー:</strong> {error}
-//             </div>
-//           )}
-
-//           <button
-//             type="submit"
-//             disabled={loading}
-//             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-//           >
-//             {loading ? 'ログイン中...' : 'ログインボタン'}
-//           </button>
-//         </form>
-
-//         <p className="mt-4 text-center text-sm text-gray-600">
-//           アカウントをお持ちでないですか？{' '}
-//           <a href="/users/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-//             新規登録はこちら
-//           </a>
-//         </p>
-//       </div>
-//     </div>
-//   )
-// }
-
