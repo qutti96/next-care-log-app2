@@ -32,24 +32,24 @@ export default async function CreateProfilePage({ params }: CreateProfilePagePro
       })
     }
 
-    if (error) {
-      console.error('❌ CreateProfilePage: Auth error:', error.message)
-      redirect('/users/login')
-    }
-    
-    if (!user) {
+    // エラーまたはユーザーが存在しない場合はログインへ
+    if (error || !user) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('❌ CreateProfilePage: No user found, redirecting to login')
+        console.log('❌ CreateProfilePage: Auth session missing, redirecting to login')
       }
       redirect('/users/login')
     }
 
+    // 🚀 重要: 権限チェックを最初に実行（プロフィール取得前に）
     if (user.id !== params.id) {
       console.warn('⚠️ CreateProfilePage: User ID mismatch!', {
         authUserId: user.id,
         paramId: params.id
       })
       // 🚀 修正2: 権限エラー時は/unauthorizedへ
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 CreateProfilePage: Redirecting to /unauthorized')
+      }
       redirect('/unauthorized')
     }
 

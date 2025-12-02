@@ -2,6 +2,8 @@
 //ChildrenFieldsコンポーネント実装
 import { Plus, Trash2 } from 'lucide-react';
 import { useFieldArray, UseFormReturn } from 'react-hook-form';
+import { useEffect } from 'react'; // 🚀 追加
+import { useToast } from '@/hooks/use-toast'; // 🚀 追加
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +16,7 @@ interface ChildrenFieldsProps {
 
 export function ChildrenFields({ form }: ChildrenFieldsProps) {
   const { control, formState: { errors } } = form;
+  const { toast } = useToast(); // 🚀 追加
 
   // useFieldArrayでお子さま配列を管理
   const { fields, append, remove } = useFieldArray({
@@ -21,14 +24,26 @@ export function ChildrenFields({ form }: ChildrenFieldsProps) {
     name: "children",
   });
 
+  // 🚀 追加：初期状態で0件なら1行追加（UX向上）
+  useEffect(() => {
+    if (fields.length === 0) {
+      append({ name: '' }); // 🚀 修正：tempId削除
+    }
+  }, [fields.length, append]);
+
   // お子さま追加（tempIdで一意性確保）
   const addChild = () => {
-    append({ name: '', tempId: `temp_${Date.now()}` });
+    append({ name: '' });
   };
 
   // お子さま削除（最低1人必須）
   const removeChild = (index: number) => {
     if (fields.length <= 1) {
+      toast({
+        title: '削除できません',
+        description: 'お子さまの情報は最低1人分必要です',
+        variant: 'destructive',
+      });
       return; // Zodバリデーションと連動
     }
     remove(index);

@@ -36,7 +36,7 @@ export function ProfileForm({ userId, userEmail, initialData, mode }: ProfileFor
       photoUrl: initialData?.photoUrl || '',
       children: initialData?.children && initialData.children.length > 0
         ? initialData.children
-        : [{ name: '', tempId: `temp_${Date.now()}` }],
+        : [], //🚀 修正：空配列に変更（ChildrenFieldsが初期化を担当）
     },
     mode: 'onChange',
   });
@@ -53,7 +53,13 @@ export function ProfileForm({ userId, userEmail, initialData, mode }: ProfileFor
             ? 'プロフィールを登録しました'
             : 'プロフィールを更新しました'
         });
-        router.push(`/users/${userId}/complete`);
+        //🚀 修正：モード別の遷移制御
+        if (mode === 'create') {
+          router.push(`/users/${userId}/complete`);
+        } else {
+        // 編集の場合は現在のページをリフレッシュしてAuthContextを更新
+        router.refresh();
+        }
       } else {
         toast({
           title: 'エラー',
@@ -189,13 +195,13 @@ export function ProfileForm({ userId, userEmail, initialData, mode }: ProfileFor
                 <div className="flex flex-col sm:flex-row gap-3 pt-6">
                   <Button
                     type="submit"
-                    disabled={isLoading}
+                    disabled={isLoading ||(mode === 'edit' && !form.formState.isDirty)}
                     className="flex-1 bg-blue-600 hover:bg-blue-700"
                   >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {mode === 'create' ? '登録する' : '更新する'}
                   </Button>
-                  
+
                   {mode === 'create' ? (
                     <Button
                       type="button"
