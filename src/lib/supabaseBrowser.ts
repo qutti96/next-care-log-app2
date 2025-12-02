@@ -119,7 +119,10 @@ export async function signOut() {
   // 完全サインアウト（インスタンスもリセット）
   if (process.env.NODE_ENV === 'development') {
     console.log('🔄 サインアウト完了（インスタンスリセット）')
-    g.__supabaseBrowserInstance = undefined
+    // g.__supabaseBrowserInstance = undefined
+    //signOut()関数でインスタンスをリセットしているため、
+    // ログイン後に新しいインスタンスが作成され、
+    // AuthContextのuseEffect依存配列が変化して無限ループが発生
   }
 
   return true

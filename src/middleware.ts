@@ -38,6 +38,8 @@ export async function middleware(req: NextRequest) {
   )
 
   // 🚀 getSession推奨（自動リフレッシュ対応）
+  // 注意: middlewareではgetSession()を使用（getUser()はサーバーへの追加リクエストが必要）
+  // セッション情報はクッキーから読み取られ、middlewareでは同期のみを目的とする
   const { data: { session }, error } = await supabase.auth.getSession()
 
   // デバッグログ（LOG_LEVELで制御）
@@ -60,7 +62,33 @@ export async function middleware(req: NextRequest) {
     console.error('❌ Middleware Session Error:', error.message)
   }
 
-return res
+  // 🚀 追加: 認可チェック（URLのユーザーIDとセッションユーザーIDの整合性）
+  // ここでは「/users/:id/(create|edit|complete)」へのアクセスを検査し、
+  // ログイン済みかつ他人のIDの場合はサーバー段階で /unauthorized へリダイレクトする
+  if (session?.user) {
+    const pathname = req.nextUrl.pathname
+    const userPathMatch = pathname.match(/^\/users\/([^/]+)\/(create|edit|complete)/)
+
+    if (userPathMatch) {
+      const [, paramId, section] = userPathMatch
+      const authUserId = session.user.id
+
+      if (paramId !== authUserId) {
+        if (LOG_LEVEL === 'debug') {
+          console.warn('⚠️ Middleware: User ID mismatch - redirecting to /unauthorized', {
+            authUserId,
+            paramId,
+            section,
+          })
+        }
+
+        const unauthorizedUrl = new URL('/unauthorized', req.nextUrl.origin)
+        return NextResponse.redirect(unauthorizedUrl)
+      }
+    }
+  }
+
+  return res
 }
 
 export const config = {
