@@ -45,6 +45,16 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
   }
 
   // 🚀 重要：リダイレクト処理をtry-catchの外に配置
+  // 認証済みユーザーがログインページに直接アクセスした場合のみリダイレクト
+  // /unauthorizedページからのリダイレクトの場合は、クライアント側で処理するため、
+  // サーバー側ではリダイレクトしない（クライアント側のuseEffectで処理）
+  // 注意: この方法は完全ではないが、/unauthorizedページが表示されることを優先
+  
+  // 認証済みユーザーがログインページに直接アクセスした場合のみリダイレクト
+  // ただし、/unauthorizedページからのリダイレクトの場合は、クライアント側で処理
+  // サーバー側では、認証済みユーザーでもログインページを表示する
+  // クライアント側でリダイレクトが必要かどうかを判断する
+  // 一時的に無効化して、/unauthorizedページが表示されることを確認
   if (user && profile) {
     if (process.env.NODE_ENV === 'development') {
       console.log('🔄 LoginPage: Redirecting authenticated user:', {
