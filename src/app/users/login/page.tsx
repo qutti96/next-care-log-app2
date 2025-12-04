@@ -31,14 +31,39 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
     if (authUser && !error) {
       user = authUser
 
-      // プロフィール状態確認
-      const { data: profileData } = await supabase
-        .from('users')
-        .select('name')
-        .eq('id', user.id)
-        .maybeSingle()
+      // 🚀 改善: プロフィール完成度を判定（create/page.tsxと同じロジック）
+      const [profileResult, childrenResult] = await Promise.all([
+        supabase
+          .from('users')
+          .select('name, name_kana, tel, photo_url')
+          .eq('id', user.id)
+          .maybeSingle(),
+        supabase
+          .from('children')
+          .select('id')
+          .eq('parent_id', user.id)
+          .is('deleted_at', null)
+      ])
 
+      const { data: profileData } = profileResult
+      const { data: children } = childrenResult
+
+      // 🚀 改善: 業務ロジックに基づいた完成判定
+      const hasBasicInfo = !!profileData?.name
+      const hasOptionalFields = !!(
+        profileData?.name_kana || 
+        profileData?.tel || 
+        profileData?.photo_url
+      )
+      const hasChildren = (children?.length ?? 0) > 0
+
+      // 保育園アプリでは「基本情報 + 子ども情報」が揃って初めて完成
+      const isProfileComplete = hasBasicInfo && hasOptionalFields && hasChildren
+
+      // プロフィールが完成している場合のみprofileを設定
+      if (isProfileComplete) {
         profile = profileData
+      }
     }
   } catch (error) {
     console.error('❌ LoginPage: Auth check failed:', error)
@@ -55,21 +80,29 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
   // サーバー側では、認証済みユーザーでもログインページを表示する
   // クライアント側でリダイレクトが必要かどうかを判断する
   // 一時的に無効化して、/unauthorizedページが表示されることを確認
+  // 🚀 改善: プロフィールが完成している場合のみリダイレクト
   if (user && profile) {
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔄 LoginPage: Redirecting authenticated user:', {
+      console.log('🔄 LoginPage: Redirecting authenticated user with complete profile:', {
         userId: user.id,
-        hasProfile: !!profile?.name,
-        redirectTo: profile?.name ? 'edit' : 'create'
+        hasProfile: true,
+        redirectTo: 'edit'
       })
     }
 
     // redirect()の例外スローは正常動作 - try-catchで囲まない
-    if (profile?.name) {
-      redirect(`/users/${user.id}/edit`)
-    } else {
-      redirect(`/users/${user.id}/create`)
+    redirect(`/users/${user.id}/edit`)
+  } else if (user && !profile) {
+    // 🚀 改善: プロフィールが未完成の場合は/createにリダイレクト
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 LoginPage: Redirecting authenticated user with incomplete profile:', {
+        userId: user.id,
+        hasProfile: false,
+        redirectTo: 'create'
+      })
     }
+
+    redirect(`/users/${user.id}/create`)
   }
 
   // 未認証ユーザーのみここに到達

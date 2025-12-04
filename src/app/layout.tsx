@@ -27,7 +27,8 @@ export default function RootLayout({
       >
         <AuthProvider>
           {children}
-          <Toaster /> {/* ← 重要：body直下に配置 */}        </AuthProvider>
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );
