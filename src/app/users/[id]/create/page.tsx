@@ -53,12 +53,22 @@ export default async function CreateProfilePage({ params }: CreateProfilePagePro
       redirect('/unauthorized')
     }
 
-    // 🚀 修正3: 既存プロフィールチェック追加
-    const { data: existingProfile, error: profileError } = await supabase
-      .from('users')
-      .select('name') // 🚀 パフォーマンス配慮：必要最小限のフィールド
-      .eq('id', user.id)
-      .maybeSingle()
+    // 🚀 改善: 保護者情報と子ども情報を効率的に同時取得
+    const [profileResult, childrenResult] = await Promise.all([
+      supabase
+        .from('users')
+        .select('name, name_kana, tel, photo_url')
+        .eq('id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('children')
+        .select('id')
+        .eq('parent_id', user.id)
+        .is('deleted_at', null)
+    ])
+
+    const { data: existingProfile, error: profileError } = profileResult
+    const { data: children, error: childrenError } = childrenResult
 
     if (profileError) {
       console.error('❌ CreateProfilePage: Profile fetch error:', profileError.message)
@@ -66,21 +76,58 @@ export default async function CreateProfilePage({ params }: CreateProfilePagePro
       redirect('/users/login')
     }
 
-    if (existingProfile?.name) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('ℹ️ CreateProfilePage: Profile already exists, redirecting to edit')
-      }
-      redirect(`/users/${user.id}/edit`)
+    if (childrenError) {
+      console.error('❌ CreateProfilePage: Children fetch error:', childrenError.message)
+      // 子ども情報取得エラーは致命的ではないため、作成画面を表示
     }
 
+    // 🚀 改善: 業務ロジックに基づいた完成判定
+    const hasBasicInfo = !!existingProfile?.name
+    const hasOptionalFields = !!(
+      existingProfile?.name_kana || 
+      existingProfile?.tel || 
+      existingProfile?.photo_url
+    )
+    const hasChildren = (children?.length ?? 0) > 0
+
+ // 保育園アプリでは「基本情報 + 子ども情報」が揃って初めて完成
+  const isProfileComplete = hasBasicInfo && hasOptionalFields && hasChildren
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 CreateProfilePage: Profile completion status:', {
+      hasBasicInfo,
+      hasOptionalFields,
+      hasChildren,
+      childrenCount: children?.length ?? 0,
+      isProfileComplete
+    })
+  }
+
+  if (isProfileComplete) {
     if (process.env.NODE_ENV === 'development') {
-      console.log('✅ CreateProfilePage: User authenticated successfully:', user.id)
+      console.log('ℹ️ CreateProfilePage: Profile complete, redirecting to edit')
+    }
+    redirect(`/users/${user.id}/edit`)
+  }
+
+    // 🚀 重要: 既存のプロフィールデータを初期値として準備
+    const initialData = existingProfile ? {
+      name: existingProfile.name || '',
+      nameKana: existingProfile.name_kana || '',
+      tel: existingProfile.tel || '',
+      photoUrl: existingProfile.photo_url || '',
+      children: [] // 作成画面では空配列（これから追加するため）
+    } : undefined
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📝 CreateProfilePage: Initial data prepared:', initialData)
     }
 
     return (
       <ProfileForm
         userId={user.id}
         userEmail={user.email!}
+        initialData={initialData}
         mode="create"
       />
     )

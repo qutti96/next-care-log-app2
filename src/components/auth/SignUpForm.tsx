@@ -160,6 +160,7 @@ export default function SignUpForm({
       if (authError) {
         setError(authError.message)
         console.error('❌ Sign up error:', authError)
+        setLoading(false) // 🚀 修正: エラー時もloading状態を解除
         return
       }
 
@@ -257,9 +258,9 @@ export default function SignUpForm({
     const message = err instanceof Error ? err.message : String(err)
     setError('予期せぬエラーが発生しました: ' + message)
     console.error('❌ Unexpected error:', err)
-  } finally {
-    // ローディング状態は成功時のリダイレクトまたはタイムアウトで解除
+    setLoading(false) // 🚀 修正: 例外発生時もloading状態を解除
   }
+  // 注意: 成功時はリダイレクトまたはタイムアウトでloading状態が解除される
 }
 
 
