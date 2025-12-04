@@ -56,21 +56,39 @@ export function ProfileForm({ userId, userEmail, initialData, mode }: ProfileFor
         //🚀 修正：モード別の遷移制御
         if (mode === 'create') {
           router.push(`/users/${userId}/complete`);
+          router.refresh();
         } else {
         // 編集の場合は現在のページをリフレッシュしてAuthContextを更新
         router.refresh();
         }
       } else {
-        toast({
-          title: 'エラー',
-          description: result.error || '処理に失敗しました',
-          variant: 'destructive',
-        });
+        if(result.fieldErrors){
+          result.fieldErrors.forEach((issue) => {
+            const fieldPath = Array.isArray(issue.path) ? issue.path.join('.') : issue.path || 'root';
+            form.setError(fieldPath as any, {
+              type: 'server',
+              message: issue.message,
+            });
+          });
+
+          toast({
+            title: '入力内容を確認してください',
+            description: '赤字で表示された項目を修正してください',
+            variant: 'destructive',
+          });
+
+        } else {
+          toast({
+            title: 'エラー',
+            description: result.error || '処理に失敗しました',
+            variant: 'destructive',
+          });
+        }
       }
     } catch (error) {
       console.error('Profile submission error:', error);
       toast({
-        title: 'エラー',
+        title: 'システムエラー',
         description: '予期しないエラーが発生しました',
         variant: 'destructive',
       });

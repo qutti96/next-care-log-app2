@@ -106,68 +106,69 @@ export async function upsertUserProfile(
     }
 
     // 👶 子どもデータの処理
-    if (validatedData.data.children.length > 0) {
-      // 既存の子どもデータを取得（ソフトデリート対象の特定用）
-      const { data: existingChildren, error: fetchError } = await supabase
-        .from('children')
-        .select('id')
-        .eq('parent_id', userId)
-        .is('deleted_at', null)
+    // 既存の子どもデータを取得（ソフトデリート対象の特定用）
+    const { data: existingChildren, error: fetchError } = await supabase
+      .from('children')
+      .select('id')
+      .eq('parent_id', userId)
+      .is('deleted_at', null)
 
-      if (fetchError) {
-        console.error('Failed to fetch existing children:', fetchError)
-        throw new Error('既存の子ども情報の取得に失敗しました')
-      }
+    if (fetchError) {
+      console.error('Failed to fetch existing children:', fetchError)
+      throw new Error('既存の子ども情報の取得に失敗しました')
+    }
 
-      const existingIds = new Set((existingChildren || []).map(child => child.id))
-      
-      // upsert対象の子どもデータを準備
-      const childrenToUpsert: ChildInsert[] = validatedData.data.children.map((child) => ({
-        id: child.id || crypto.randomUUID(),
-        parent_id: userId,
-        name: child.name,
-        updated_at: timestamp,
-        // ★ 重要: 条件付きプロパティでnull問題を解決
-        ...(child.nameKana && { name_kana: child.nameKana }),
-        ...(child.birthday && { birthday: child.birthday }),
-        ...(child.classId && { class_id: child.classId }),
-        ...(child.allergens && { allergens: child.allergens }),
-        ...(child.milkAmount && { milk_amount: child.milkAmount }),
-        ...(child.milkInterval && { milk_interval: child.milkInterval }),
-        ...(child.photoUrl && { photo_url: child.photoUrl }),
-      }))
+    const existingIds = new Set((existingChildren || []).map(child => child.id))
 
-      // 子どもデータをupsert
+      // upsert対象の子どもデータを準備（0件のこともある）
+    const childrenToUpsert: ChildInsert[] = validatedData.data.children.map((child) => ({
+      id: child.id || crypto.randomUUID(),
+      parent_id: userId,
+      name: child.name,
+      updated_at: timestamp,
+      // ★ 重要: 条件付きプロパティでnull問題を解決
+      ...(child.nameKana && { name_kana: child.nameKana }),
+      ...(child.birthday && { birthday: child.birthday }),
+      ...(child.classId && { class_id: child.classId }),
+      ...(child.allergens && { allergens: child.allergens }),
+      ...(child.milkAmount && { milk_amount: child.milkAmount }),
+      ...(child.milkInterval && { milk_interval: child.milkInterval }),
+      ...(child.photoUrl && { photo_url: child.photoUrl }),
+    }))
+
+    //children が 1件以上あるときだけ子どもデータをupsert
+    if(childrenToUpsert.length > 0) {
       const { error: childrenError } = await supabase
         .from('children')
         .upsert(childrenToUpsert, { onConflict: 'id' })
 
-      if (childrenError) {
-        console.error('Children upsert failed:', childrenError)
-        throw new Error(`お子さま情報の保存に失敗しました: ${childrenError.message}`)
-      }
-
-      // フォームから削除された子どもをソフトデリート
-      const currentIds = new Set(childrenToUpsert.map(child => child.id))
-      // const deletedIds = [...existingIds].filter(id => !currentIds.has(id))
-      const deletedIds = Array.from(existingIds).filter(id => !currentIds.has(id))
-
-      if (deletedIds.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('children')
-          .update({
-            deleted_at: timestamp,
-            updated_at: timestamp
-          })
-          .in('id', deletedIds)
-          .eq('parent_id', userId)
-
-        if (deleteError) {
-          console.warn('Children soft delete failed:', deleteError)
-          // ソフトデリートの失敗は致命的でないため警告のみ
+        if (childrenError) {
+          console.error('Children upsert failed:', childrenError)
+          throw new Error(`お子さま情報の保存に失敗しました: ${childrenError.message}`)
         }
       }
-    }
+
+    // フォームから削除された子どもをソフトデリート
+    const currentIds = new Set(childrenToUpsert.map(child => child.id))
+    // const deletedIds = [...existingIds].filter(id => !currentIds.has(id))
+    const deletedIds = Array.from(existingIds).filter(id => !currentIds.has(id))
+
+    // フォームから削除された子どもをソフトデリート（常に実行）
+    if (deletedIds.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('children')
+        .update({
+          deleted_at: timestamp,
+          updated_at: timestamp
+        })
+        .in('id', deletedIds)
+        .eq('parent_id', userId)
+
+      if (deleteError) {
+        console.warn('Children soft delete failed:', deleteError)
+        // ソフトデリートの失敗は致命的でないため警告のみ
+      }
+  }
 
     // 🔄 キャッシュ更新
     revalidatePath(`/users/${userId}`)
