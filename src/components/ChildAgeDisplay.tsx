@@ -1,5 +1,5 @@
 import { ChildAgeInfo } from '@/types';
-import { formatBirthDate } from '@/lib/utils/dateUtils';
+import { formatBirthDate } from '@/lib/utils/childAgeUtils';
 
 interface ChildAgeDisplayProps {
   birthday: Date;
