@@ -50,8 +50,11 @@ function AuthCallbackContent() {
         console.log('✅ セッション作成成功:', user.email)
 
         // usersテーブルに安全に挿入（upsert使用）
-        const name = (user.user_metadata?.name as string) || ''
+        const name = (user.user_metadata?.name as string) || user.email!.split('@')[0]
         console.log('📝 usersテーブル作成中...', { userId: user.id, name })
+
+        // 🚀 修正: 必須フィールドを全て含める
+        const timestamp = new Date().toISOString()
 
         const { error: upsertError } = await supabase
           .from('users')
@@ -60,10 +63,12 @@ function AuthCallbackContent() {
               id: user.id,
               email: user.email!,
               name: name,
-              password: null,
               name_kana: null,
               tel: null,
               photo_url: null,
+              role: 'PARENT',
+              created_at: timestamp,
+              updated_at: timestamp,
             },
             {
               onConflict: 'id',
