@@ -19,6 +19,30 @@ type UserInsert = Database['public']['Tables']['users']['Insert']
 type ChildInsert = Database['public']['Tables']['children']['Insert']
 
 /**
+ * 型変換ヘルパー関数:フィールド名の変換と型安全性を一箇所で管理
+ * ParentProfileFormValues → Supabase Insert形式に変換
+ */
+function convertChildToSupabaseFormat(child: any, userId: string, timestamp: string): ChildInsert {
+  return {
+    id: child.id || crypto.randomUUID(),
+    parent_id: userId, // ✅ camelCase → snake_case 変換
+    name: child.name,
+    
+    // ✅ 数値型を適切に処理（PostgreSQLが自動キャスト）
+    milk_amount: typeof child.milkAmount === 'number' ? child.milkAmount : null,
+    milk_interval: typeof child.milkInterval === 'number' ? child.milkInterval : null,
+    
+    updated_at: timestamp,
+    // 条件付きフィールド
+    ...(child.nameKana && { name_kana: child.nameKana }),
+    ...(child.birthday && { birthday: child.birthday }),
+    ...(child.classId && { class_id: child.classId }),
+    ...(child.allergens && { allergens: child.allergens }),
+    ...(child.photoUrl && { photo_url: child.photoUrl }),
+  }
+}
+
+/**
  * ユーティリティ関数
  */
 function getCurrentTimestamp() {
@@ -121,20 +145,9 @@ export async function upsertUserProfile(
     const existingIds = new Set((existingChildren || []).map(child => child.id))
 
       // upsert対象の子どもデータを準備（0件のこともある）
-    const childrenToUpsert: ChildInsert[] = validatedData.data.children.map((child) => ({
-      id: child.id || crypto.randomUUID(),
-      parent_id: userId,
-      name: child.name,
-      updated_at: timestamp,
-      // ★ 重要: 条件付きプロパティでnull問題を解決
-      ...(child.nameKana && { name_kana: child.nameKana }),
-      ...(child.birthday && { birthday: child.birthday }),
-      ...(child.classId && { class_id: child.classId }),
-      ...(child.allergens && { allergens: child.allergens }),
-      ...(child.milkAmount && { milk_amount: child.milkAmount }),
-      ...(child.milkInterval && { milk_interval: child.milkInterval }),
-      ...(child.photoUrl && { photo_url: child.photoUrl }),
-    }))
+    const childrenToUpsert: ChildInsert[] = validatedData.data.children.map((child) => 
+      convertChildToSupabaseFormat(child, userId, timestamp)
+  )
 
     //children が 1件以上あるときだけ子どもデータをupsert
     if(childrenToUpsert.length > 0) {
@@ -235,7 +248,8 @@ export async function getUserProfile(userId: string) {
     }
 
     // 🔄 データ変換（DB形式 → フォーム形式）
-    const profile = {
+    const profile: ParentProfileFormValues = {
+      id: userData.id,
       name: userData.name || '',
       nameKana: userData.name_kana || '',
       tel: userData.tel || '',
@@ -249,8 +263,11 @@ export async function getUserProfile(userId: string) {
           birthday: child.birthday || '',
           classId: child.class_id || '',
           allergens: child.allergens || '',
-          milkAmount: child.milk_amount || '',
-          milkInterval: child.milk_interval || '',
+          
+          // ✅ 重要：数値型として維持（PostgreSQLから数値で取得）
+          milkAmount: typeof child.milk_amount === 'number' ? child.milk_amount : null,
+          milkInterval: typeof child.milk_interval === 'number' ? child.milk_interval : null,
+          
           photoUrl: child.photo_url || '',
         }))
     }
