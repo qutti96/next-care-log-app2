@@ -42,10 +42,10 @@ export interface ChildFormData {
   name: string;
   nameKana?: string;
   birthday: string; // HTMLフォームでは文字列
-  classId: string;
+  classId?: string | null;
   allergens?: string;
-  milkAmount?: string;
-  milkInterval?: string;
+  milkAmount?: number | null;   // INTEGER型
+  milkInterval?: number | null; // DECIMAL型
   photoUrl?: string;
 }
 
@@ -78,15 +78,13 @@ export interface PaginatedResponse<T> {
 
 // === Prismaの型を拡張・結合した型定義 ===
 // （includeオプションで取得される関連データの型）
-export interface ChildWithClass extends Child {
-  class: ClassWithFacility;
-  parent?: User;
-}
-
 export interface ClassWithFacility extends Class {
   facility: Facility;
 }
-
+export interface ChildWithClass extends Child {
+  class?: ClassWithFacility | null;  // ✅ nullable対応
+  parent?: User;
+}
 export interface UserWithChildren extends User {
   children: ChildWithClass[];
 }
@@ -101,6 +99,38 @@ export interface UserWithChildren extends User {
 //   events: Event[];
 //   post?: PostWithRelations;
 // }
+
+//  === 子どもの月齢の型定義 ===
+export interface ChildAgeInfo {
+  years: number;
+  months: number;
+  totalMonths: number;
+  displayText: string;
+  isInfant: boolean;
+  isToddler: boolean;
+}
+
+// ✅ 修正2: ChildWithAge を明確に定義（重複解消）
+export interface ChildWithAge {
+  id: string;
+  name: string;
+  nameKana: string | null;
+  birthday: string; // APIレスポンスでは文字列
+  age: ChildAgeInfo;
+  
+  // クラス情報（任意）
+  classId: string | null;
+  className: string | null;
+  
+  // 数値型フィールド
+  milkAmount: number | null;
+  milkInterval: number | null;
+  
+  allergens: string | null;
+  photoUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 // === ドロップダウン用の型定義 ===
 export interface SelectOption {
@@ -176,18 +206,13 @@ export interface ClassStats {
   staffCount: number;
 }
 
-//  === 子どもの月齢の型定義 ===
-export interface ChildAgeInfo {
-  years: number;
-  months: number;
-  totalMonths: number;
-  displayText: string;
-  isInfant: boolean;
-  isToddler: boolean;
+//  === 子ども作成用データ型（parentId付き） ===
+export interface ChildCreateData extends ChildFormData {
+  parentId: string;
 }
-export interface ChildWithAge extends ChildWithClass {
-  age: ChildAgeInfo;
-}
+
+//  === 子ども更新用データ型（部分更新対応） ===
+export type ChildUpdateData = Partial<ChildFormData>;
 
 // 子ども情報更新用の型（部分更新対応）
 export type UpdateChildInput = Partial<Omit<ChildFormData, 'birthday'>> & {

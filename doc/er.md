@@ -22,10 +22,10 @@
 - name(TEXT)
 - nameKana(TEXT,NULLABLE)
 - birthday(DATE)
-- class_id (FK → Classes.id,UUID)
+- class_id (FK → Classes.id,UUID,NULLABLE)
 - allergens(TEXT,NULLABLE)
-- milk_amount(TEXT,NULLABLE)
-- milk_interval(TEXT,NULLABLE)
+- milk_amount(INTEGER,NULLABLE)    # ミルク量（ml単位の整数）
+- milk_interval(DECIMAL,NULLABLE)  # ミルク間隔（時間単位、小数対応）
 - photo_url(TEXT,NULLABLE)
 - created_at (TIMESTAMP)
 - updated_at (TIMESTAMP)
@@ -137,10 +137,10 @@ erDiagram
     string name "こども名"
     string name_kana "こども名かな"
     date birthday "こども誕生日"
-    uuid class_id FK "クラスID"
+    uuid class_id FK "クラスID（nullable）"
     string allergens "アレルギー食物"
-    string milk_amount "1回にあげるミルクの量"
-    string milk_interval "ミルクをあげる間隔"
+    integer milk_amount "1回にあげるミルクの量（ml）"
+    decimal milk_interval "ミルクをあげる間隔（時間）"
     string photo_url "こどもアイコン画像URL"
     timestamp created_at "作成日時"
     timestamp updated_at "更新日時"
@@ -219,7 +219,7 @@ erDiagram
   Users ||--o{ Children : "1人のuserは1以上のchildrenを持つ"
   Users ||--o{ Posts : "1人のuserは1以上のpostsを持つ"
   Children ||--o{ Posts : "一人のchildは複数のpostsを持つ"
-  Children ||--|| Classes : "一人のChildは一つのclassに所属する"
+  Children }o--|| Classes : "一人のChildは一つのclassに所属する（nullable）"
   Facilities ||--o{ Classes : "一つのfacilityは1以上のclassを持つ"
   Facilities ||--o{ Managers : "一つのfacilityは1以上のmanagerがいる"
   Facilities ||--o{ Staffs : "一つのfacilityは複数のstaffを持つ"

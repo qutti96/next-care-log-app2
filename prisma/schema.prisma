@@ -44,8 +44,8 @@ model Child {
   birthday     DateTime? @db.Date // ← nullable化
   classId      String?   @map("class_id") @db.Uuid // ← nullable化
   allergens    String?
-  milkAmount   String?   @map("milk_amount")
-  milkInterval String?   @map("milk_interval")
+  milkAmount   Int?      @map("milk_amount") // ミルク量（ml単位の整数）
+  milkInterval Decimal?  @map("milk_interval") // ミルク間隔（時間単位、小数対応）
   photoUrl     String?   @map("photo_url")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
