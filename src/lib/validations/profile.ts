@@ -1,6 +1,6 @@
 // src/lib/validations/profile.ts
 import { z } from 'zod'
-import { childFormSchema } from './child' // 詳細な子どもスキーマをインポート
+import { childFormSchema } from './child-profile' // 詳細な子どもスキーマをインポート
 
 // 国際化対応の名前バリデーション（日本語 + アルファベット）
 const nameRegex = /^[ぁ-んァ-ヶー一-龯a-zA-Z\s\-']+$/
@@ -14,7 +14,16 @@ const kanaRegex = /^[ァ-ヶー\s]*$/
  * 子どもの詳細情報は child.ts から取得
  */
 export const parentProfileFormSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.string()
+    .refine(
+      (val) => {
+        if (!val) return true; // optionalなので空は許可
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(val);
+      },
+      { message: '有効なUUID形式で入力してください' }
+    )
+    .optional(),
   name: z
     .string()
     .trim()
@@ -33,6 +42,7 @@ export const parentProfileFormSchema = z.object({
   tel: z
     .string()
     .trim()
+    .optional()
     .refine((val) => {
       // 空文字は許可（任意フィールド）
       if (!val) return true
@@ -44,7 +54,8 @@ export const parentProfileFormSchema = z.object({
       // 数字のみ抽出して桁数チェック（日本の電話番号形式）
       const digitsOnly = val.replace(/[^0-9]/g, '')
       return digitsOnly.length >= 10 && digitsOnly.length <= 11
-    }, '正しい電話番号形式で入力してください（例: 090-1234-5678）'),
+    }, '正しい電話番号形式で入力してください（例: 090-1234-5678）')
+    .or(z.literal('')),
 
     // 非公開バケット運用: storage pathを保存（例: userId/timestamp.webp）
   photoUrl: z
@@ -52,10 +63,19 @@ export const parentProfileFormSchema = z.object({
     .optional()
     .or(z.literal('')),
 
-  // 重要：child.ts の詳細なchildFormSchemaを使用
+  // 重要：child-profile.ts の詳細なchildFormSchemaを使用
   children: z
     .array(childFormSchema.extend({
-      id: z.string().uuid().optional(),
+      id: z.string()
+        .refine(
+          (val) => {
+            if (!val) return true; // optionalなので空は許可
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            return uuidRegex.test(val);
+          },
+          { message: '有効なUUID形式で入力してください' }
+        )
+        .optional(),
       // フォーム内での一時識別子（useFieldArrayで使用）
       tempId: z.string().optional(),
       // 保護者プロフィール内では一部フィールドを任意に

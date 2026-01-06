@@ -15,5 +15,5 @@ export {
   childFormSchema,
   updateChildSchema,
   type ChildFormValues,
-  type ParentChildFormValues,
-} from './child'
+  // type ParentChildFormValues,
+} from './child-profile'
