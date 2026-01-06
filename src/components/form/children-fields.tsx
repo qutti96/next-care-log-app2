@@ -33,8 +33,8 @@ export function ChildrenFields() {
       birthday: '',
       classId: '',
       allergens: '',
-      milkAmount: '',
-      milkInterval: '',
+      milkAmount: null,
+      milkInterval: null,
       photoUrl: ''
     })
   }

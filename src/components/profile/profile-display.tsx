@@ -26,30 +26,17 @@ import {
 import { ChildAgeDisplay } from '@/components/ChildAgeDisplay'
 import { getDetailedAgeFromString } from '@/lib/utils/childAgeUtils'
 
-interface Child {
-  id: string
-  name: string
-  nameKana: string
-  birthday: string
-  classId: string
-  allergens: string
-  milkAmount: string
-  milkInterval: string
-  photoUrl: string
-}
+import type { ParentProfileFormValues } from '@/lib/validations/profile'
 
-interface ProfileData {
-  name: string
-  nameKana: string
-  tel: string
-  photoUrl: string
-  children: Child[]
-}
+// 子どもプロフィールの型（バリデーションスキーマから推論）
+type Child = ParentProfileFormValues['children'][number]
 
 interface ProfileDisplayProps {
+  // Next.jsのルート・認証情報から渡される値
   userId: string
   userEmail: string
-  profile: ProfileData
+  // 統一された型定義を使用
+  profile: ParentProfileFormValues
 }
 
 // 名前の頭文字取得（アバター用）
@@ -206,17 +193,19 @@ export function ProfileDisplay({ userId, userEmail, profile }: ProfileDisplayPro
                   お子さまを追加する
                 </Button>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {profile.children.map((child, index) => {
-                  // 🚀 既存のgetDetailedAgeFromStringを活用（ChildAgeInfo型を返す）
-                  const ageInfo = getDetailedAgeFromString(child.birthday)
+              ) : (
+                <div className="space-y-4">
+                 {profile.children.map((child: Child, index: number) => {
+                   // 🚀 既存のgetDetailedAgeFromStringを活用（ChildAgeInfo型を返す）
+                   const ageInfo = child.birthday
+                     ? getDetailedAgeFromString(child.birthday)
+                     : null
 
                   // 🎯 プロフィール完成度判定
                   const profileComplete = isChildProfileComplete(child)
 
-                  return (
-                    <div key={child.id}>
+                   return (
+                     <div key={child.id ?? index}>
                       {index > 0 && <Separator className="my-4" />}
                       
                       {/* RDD仕様：子ども1氏名、子ども2氏名の表示 */}

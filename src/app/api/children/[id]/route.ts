@@ -1,7 +1,7 @@
 // app/api/children/[id]/route.ts
 import { getAuthenticatedUser, createUnauthorizedResponse, createErrorResponse } from '@/lib/auth/apiAuth';
 import { getChildById, updateChild, deleteChild } from '@/lib/services/childService';
-import { childFormSchema } from '@/lib/validations/child';
+import { childFormSchema } from '@/lib/validations/child-profile';
 
 // GET /api/children/[id] - 個別子ども取得
 export async function GET(

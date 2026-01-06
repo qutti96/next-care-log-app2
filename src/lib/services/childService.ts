@@ -1,7 +1,7 @@
 // @ts-nocheck
 // lib/services/childService.ts（月齢計算統合版）
 import { prisma } from '@/lib/prisma';
-import { ChildFormData, ChildWithAge } from '@/types';
+import { ChildFormData, ChildCreateData, ChildWithAge } from '@/types';
 import { getDetailedAge } from '@/lib/utils/childAgeUtils';
 import type { Prisma } from '@prisma/client';
 

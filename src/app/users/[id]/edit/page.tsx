@@ -33,9 +33,17 @@ export default async function EditProfilePage({ params }: EditProfilePageProps) 
     nameKana: profile.nameKana || '',
     tel: profile.tel || '',
     photoUrl: profile.photoUrl || '',
-    children: profile.children.map((child: { id: string; name: string }) => ({
-      id: child.id,
+    children: profile.children.map((child) => ({
+      // 編集画面では既存データなので id は必ず存在
+      id: child.id!, // 非null アサーション（編集時は必ず存在）
       name: child.name,
+      nameKana: child.nameKana,
+      birthday: child.birthday,
+      classId: child.classId,
+      allergens: child.allergens,
+      milkAmount: child.milkAmount,
+      milkInterval: child.milkInterval,
+      photoUrl: child.photoUrl,
       tempId: undefined,
     })),
   };

@@ -1,7 +1,7 @@
 
 import { getAuthenticatedUser, createUnauthorizedResponse, createErrorResponse } from '@/lib/auth/apiAuth';
 import { getChildrenWithAge, createChild } from '@/lib/services/childService';
-import { childFormSchema } from '@/lib/validations/child';
+import { childFormSchema } from '@/lib/validations/child-profile';
 
 // GET /api/children - 子ども一覧取得
 export async function GET() { // requestパラメータを削除
@@ -53,11 +53,23 @@ export async function POST(request: Request) { // NextRequestではなくRequest
       );
     }
 
+  // ✅ 型安全なデータ変換（既存ChildFormData型に適合）
+  const childData = {
+    parentId: user.id,
+    name: validationResult.data.name,
+    nameKana: validationResult.data.nameKana || undefined,
+    birthday: validationResult.data.birthday,
+    // classId: null/undefined を空文字に変換（既存API仕様に合わせる）
+    classId: validationResult.data.classId || '',
+    allergens: validationResult.data.allergens || undefined,
+    // 数値型をそのまま渡す
+    milkAmount: validationResult.data.milkAmount,
+    milkInterval: validationResult.data.milkInterval,
+    photoUrl: validationResult.data.photoUrl || undefined,
+  };
+
     // サービス層呼び出し
-    const newChild = await createChild({
-      ...validationResult.data,
-      parentId: user.id
-    });
+    const newChild = await createChild(childData);
 
     return new Response(
       JSON.stringify({ success: true, data: newChild }),
