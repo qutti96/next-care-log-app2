@@ -1,3 +1,9 @@
+// src/types/index.ts
+/**
+ * アプリケーション全体で使用する型定義
+ * Supabaseベースの完全独立型定義（外部依存なし）
+ */
+
 // ユーザーロール定義
 export const USER_ROLES = {
   PARENT: 'parent',
@@ -7,21 +13,73 @@ export const USER_ROLES = {
 
 export type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES]
 
-// Prismaの生成型をインポート（これが新しい基盤）
-import {
-  User,
-  Child,
-  Facility,
-  Class,
-   // 以下は将来の機能実装時に有効化
-//  Manager,
-//  Staff,
-//  Post,
-//  Log,
-//  Event
-} from '@prisma/client';
+// === 基本エンティティ型定義（Supabaseテーブル構造準拠・snake_case）===
+/**
+ * ユーザー（保護者）の基本型
+ * Supabase: profiles テーブル
+ */
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  name_kana?: string | null;
+  tel?: string | null;
+  last_name?: string | null;
+  last_name_kana?: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}
 
-// 追加の共通型定義
+/**
+ * 子どもの基本型
+ * Supabase: children テーブル（snake_case）
+ * 重要: Supabaseから取得するデータの実際の構造に合わせています
+ */
+export interface Child {
+  id: string;
+  parent_id: string;                    // Prisma時代: parentId
+  name: string;
+  name_kana?: string | null;            // Prisma時代: nameKana
+  birthday: string;                     // YYYY-MM-DD形式
+  class_id?: string | null;             // Prisma時代: classId
+  allergens?: string | null;
+  milk_amount?: string | null;          // Supabaseでは文字列型
+  milk_interval?: string | null;        // Supabaseでは文字列型
+  photo_url?: string | null;            // Prisma時代: photoUrl
+  created_at: string;                   // Prisma時代: createdAt
+  updated_at: string;                   // Prisma時代: updatedAt
+  deleted_at?: string | null;           // Prisma時代: deletedAt
+}
+
+/**
+ * クラスの基本型
+ * Supabase: classes テーブル
+ */
+export interface Class {
+  id: string;
+  name: string;
+  facility_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}
+
+/**
+ * 施設の基本型
+ * Supabase: facilities テーブル
+ */
+export interface Facility {
+  id: string;
+  name: string;
+  address?: string | null;
+  tel?: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}
+
+
 // === 認証関連の型定義 ===
 export interface AuthUser {
   id: string;
@@ -36,19 +94,28 @@ export interface AuthSession {
   expiresAt: string;
 }
 
-// === フォーム用の型定義 ===
-// （データベース型とは異なる形でフォーム入力を表現）
+// === フォーム用の型定義（camelCase・フロントエンド向け） ===
+/**
+ * 子どもプロフィールフォーム用データ型
+ * 注意: フォームではcamelCase、数値型を使用
+ * Server Actionでsnake_case + 文字列型に変換
+ */
 export interface ChildFormData {
   name: string;
-  nameKana?: string;
-  birthday: string; // HTMLフォームでは文字列
-  classId?: string | null;
+  nameKana?: string;                    // DB: name_kana
+  birthday: string;                     // YYYY-MM-DD形式
+  classId?: string | null;              // DB: class_id
   allergens?: string;
-  milkAmount?: number | null;   // INTEGER型
-  milkInterval?: number | null; // DECIMAL型
-  photoUrl?: string;
+  milkAmount?: number | null;           // DB: milk_amount (string)
+  milkInterval?: number | null;         // DB: milk_interval (string)
+  photoUrl?: string;                    // DB: photo_url
 }
 
+/**
+ * 投稿フォーム用データ型
+ * 注意: フォームではcamelCase、数値型を使用
+ * Server Actionでsnake_case + 文字列型に変換
+ */
 export interface PostFormData {
   childId: string;
   postDay: string; // HTMLフォームでは文字列
@@ -76,15 +143,26 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
-// === Prismaの型を拡張・結合した型定義 ===
-// （includeオプションで取得される関連データの型）
+// === リレーションを含む型定義 ===
+/**
+ * 施設情報を含むクラス型
+ */
 export interface ClassWithFacility extends Class {
-  facility: Facility;
+  facility?: Facility | null;
 }
+
+/**
+ * クラス情報を含む子ども型
+ * Supabaseの結合クエリ結果に対応
+ */
 export interface ChildWithClass extends Child {
-  class?: ClassWithFacility | null;  // ✅ nullable対応
-  parent?: User;
+  class?: ClassWithFacility | null;
+  parent?: User | null;
 }
+
+/**
+ * 子ども一覧を含むユーザー型
+ */
 export interface UserWithChildren extends User {
   children: ChildWithClass[];
 }
@@ -110,26 +188,12 @@ export interface ChildAgeInfo {
   isToddler: boolean;
 }
 
-// ✅ 修正2: ChildWithAge を明確に定義（重複解消）
-export interface ChildWithAge {
-  id: string;
-  name: string;
-  nameKana: string | null;
-  birthday: string; // APIレスポンスでは文字列
+/**
+ * 年齢情報を含む子ども型（表示用）
+ * ChildWithClass を拡張して年齢情報を追加
+ */
+export interface ChildWithAge extends ChildWithClass {
   age: ChildAgeInfo;
-  
-  // クラス情報（任意）
-  classId: string | null;
-  className: string | null;
-  
-  // 数値型フィールド
-  milkAmount: number | null;
-  milkInterval: number | null;
-  
-  allergens: string | null;
-  photoUrl: string | null;
-  createdAt: string;
-  updatedAt: string;
 }
 
 // === ドロップダウン用の型定義 ===
@@ -219,9 +283,16 @@ export type UpdateChildInput = Partial<Omit<ChildFormData, 'birthday'>> & {
   birthday?: string; // 更新時もstring型で受け取り、サービス層でDate変換
 };
 
-// 子どもエラーハンドリング統一用（オプション）
+// === エラーハンドリング用 ===
+
+/**
+ * 子どもエラーハンドリング統一用
+ */
 export class ChildServiceError extends Error {
-  constructor(message: string, public code: 'NOT_FOUND' | 'UNAUTHORIZED' | 'VALIDATION_ERROR') {
+  constructor(
+    message: string,
+    public code: 'NOT_FOUND' | 'UNAUTHORIZED' | 'VALIDATION_ERROR'
+  ) {
     super(message);
     this.name = 'ChildServiceError';
   }
