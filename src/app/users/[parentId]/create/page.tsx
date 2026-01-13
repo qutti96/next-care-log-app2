@@ -1,4 +1,4 @@
-// app/users/[id]/create/page.tsx
+// app/users/[parentId]/create/page.tsx
 // 保護者プロフィール作成ページ
 
 export const dynamic = 'force-dynamic'
@@ -9,13 +9,13 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { ProfileForm } from '@/components/profile/profile-form';
 
 interface CreateProfilePageProps {
-  params: { id: string };
+  params: { parentId: string };
 }
 
 export default async function CreateProfilePage({ params }: CreateProfilePageProps) {
   // 🚀 修正1: 開発環境限定ログ
   if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 CreateProfilePage: Starting for user ID:', params.id)
+    console.log('🔍 CreateProfilePage: Starting for user ID:', params.parentId)
   }
 
   const supabase = createServerSupabase();
@@ -27,7 +27,7 @@ export default async function CreateProfilePage({ params }: CreateProfilePagePro
       console.log('🔍 CreateProfilePage: Auth check:', {
         hasUser: !!user,
         userId: user?.id,
-        paramId: params.id,
+        paramId: params.parentId,
         error: error?.message,
       })
     }
@@ -41,10 +41,10 @@ export default async function CreateProfilePage({ params }: CreateProfilePagePro
     }
 
     // 🚀 重要: 権限チェックを最初に実行（プロフィール取得前に）
-    if (user.id !== params.id) {
+    if (user.id !== params.parentId) {
       console.warn('⚠️ CreateProfilePage: User ID mismatch!', {
         authUserId: user.id,
-        paramId: params.id
+        paramId: params.parentId
       })
       // 🚀 修正2: 権限エラー時は/unauthorizedへ
       if (process.env.NODE_ENV === 'development') {
@@ -125,7 +125,7 @@ export default async function CreateProfilePage({ params }: CreateProfilePagePro
 
     return (
       <ProfileForm
-        userId={user.id}
+        parentId={user.id}
         userEmail={user.email!}
         initialData={initialData}
         mode="create"

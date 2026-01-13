@@ -9,7 +9,7 @@ import { getUserProfile } from '@/lib/actions/profile'
 import { ProfileDisplay } from '@/components/profile/profile-display'
 
 interface ProfilePageProps {
-  params: { id: string }
+  params: { parentId: string }
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
@@ -24,7 +24,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     }
 
     // 🚀 権限チェック：自分のプロフィールのみ閲覧可能
-    if (user.id !== params.id) {
+    if (user.id !== params.parentId) {
       redirect('/unauthorized')
     }
 
@@ -40,7 +40,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
     return (
       <ProfileDisplay 
-        userId={user.id}
+        parentId={user.id}
         userEmail={user.email!}
         profile={profile}
       />

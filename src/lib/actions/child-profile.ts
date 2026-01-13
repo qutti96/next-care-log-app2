@@ -112,7 +112,7 @@ export async function upsertChildProfile(
     // 6. キャッシュ更新
     revalidatePath(`/users/${user.id}`)
     revalidatePath(`/users/${user.id}/children`)
-    revalidatePath(`/users-children/${result.id}`)
+    revalidatePath(`/users/${user.id}/children/${result.id}`)
 
     return { success: true, data: result }
 
@@ -176,7 +176,7 @@ export async function deleteChildProfile(childId: string): Promise<ActionState> 
     // ソフトデリート（deleted_atを設定）
     const { error } = await supabase
       .from("children")
-      .update({ 
+      .update({
         deleted_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })

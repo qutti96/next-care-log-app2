@@ -79,7 +79,7 @@ export function ChildForm({
           : 'お子さまのプロフィールを更新しました！',
       });
 
-      router.push(`/users-children/${result.data?.id}`);
+      router.push(`/users/${parentId}/children/${result.data?.id}`);
       router.refresh();
     } catch (error) {
       toast({

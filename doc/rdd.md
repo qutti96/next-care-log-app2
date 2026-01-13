@@ -220,7 +220,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 保護者プロフィール登録画面
 
-/users/[id]/create
+/users/[parentId]/create
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -238,7 +238,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 保護者プロフィール編集画面
 
-/users/[id]/edit
+/users/[parentId]/edit
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -256,7 +256,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 保護者プロフィール登録・編集完了画面
 
-/users/[id]/complete
+/users/[parentId]/complete
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -265,7 +265,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 保護者プロフィール画面
 
-/users/[id]/
+/users/[parentId]/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -283,7 +283,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 子どもプロフィール登録画面
 
-/users-children/[id]/create
+/users/[parentId]/children/[childId]/create
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -301,7 +301,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 子どもプロフィール編集画面
 
-/users-children/[id]/edit
+/users/[parentId]/children/[childId]/edit
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -319,7 +319,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 子どもプロフィール画面
 
-/users-children/[id]/
+/users/[parentId]/children/[childId]/
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |
@@ -337,7 +337,7 @@ model User {           // アプリ：単数形、camelCase
 
 ### 子どもプロフィール登録完了画面
 
-/users-children/[id]/complete
+/users/[parentId]/children/[childId]/complete
 
 | 要素名         | タイプ     | 説明                                     |
 | ------------- | -------- | ---------------------------------------- |

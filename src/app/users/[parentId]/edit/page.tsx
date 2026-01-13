@@ -4,7 +4,7 @@ import { ProfileForm } from '@/components/profile/profile-form';
 import { getUserProfile } from '@/lib/actions/profile';
 
 interface EditProfilePageProps {
-  params: { id: string };
+  params: { parentId: string };
 }
 
 export default async function EditProfilePage({ params }: EditProfilePageProps) {
@@ -17,14 +17,14 @@ export default async function EditProfilePage({ params }: EditProfilePageProps) 
   }
 
   // 権限確認
-  if (user.id !== params.id) {
+  if (user.id !== params.parentId) {
     redirect('/unauthorized');
   }
 
   // 既存データ取得
-  const profileResult = await getUserProfile(params.id);
+  const profileResult = await getUserProfile(params.parentId);
   if (!profileResult.success) {
-    redirect(`/users/${params.id}/create`);
+    redirect(`/users/${params.parentId}/create`);
   }
 
   const profile = profileResult.data!;
@@ -50,7 +50,7 @@ export default async function EditProfilePage({ params }: EditProfilePageProps) 
 
   return (
     <ProfileForm 
-      userId={user.id}
+      parentId={user.id}
       userEmail={user.email!}
       initialData={initialData}
       mode="edit"

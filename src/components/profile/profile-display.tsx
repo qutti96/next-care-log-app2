@@ -33,7 +33,7 @@ type Child = ParentProfileFormValues['children'][number]
 
 interface ProfileDisplayProps {
   // Next.jsのルート・認証情報から渡される値
-  userId: string
+  parentId: string
   userEmail: string
   // 統一された型定義を使用
   profile: ParentProfileFormValues
@@ -58,7 +58,7 @@ function isChildProfileComplete(child: Child): boolean {
   )
 }
 
-export function ProfileDisplay({ userId, userEmail, profile }: ProfileDisplayProps) {
+export function ProfileDisplay({ parentId, userEmail, profile }: ProfileDisplayProps) {
   const router = useRouter()
 
   return (
@@ -77,7 +77,7 @@ export function ProfileDisplay({ userId, userEmail, profile }: ProfileDisplayPro
           </Button>
           
           <Button
-            onClick={() => router.push(`/users/${userId}/edit`)}
+            onClick={() => router.push(`/users/${parentId}/edit`)}
             className="gap-2 bg-blue-600 hover:bg-blue-700"
           >
             <Edit className="h-4 w-4" />
@@ -186,7 +186,7 @@ export function ProfileDisplay({ userId, userEmail, profile }: ProfileDisplayPro
                 </p>
                 <Button
                   variant="outline"
-                  onClick={() => router.push(`/users/${userId}/edit`)}
+                  onClick={() => router.push(`/users/${parentId}/edit`)}
                   className="gap-2"
                 >
                   <Edit className="h-4 w-4" />
@@ -261,9 +261,9 @@ export function ProfileDisplay({ userId, userEmail, profile }: ProfileDisplayPro
                               variant={profileComplete ? "outline" : "default"}
                               size="sm"
                               onClick={() => {
-                                const targetUrl = profileComplete 
-                                  ? `/users-children/${child.id}` 
-                                  : `/users-children/${child.id}/create`
+                                const targetUrl = profileComplete
+                                ? `/users/${parentId}/children/${child.id}`        // 詳細表示
+                                : `/users/${parentId}/children/${child.id}/create` // 新規登録
                                 router.push(targetUrl)
                               }}
                               className={`gap-2 mt-2 ${!profileComplete ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`}

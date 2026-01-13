@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle } from 'lucide-react';
 
 interface CompletePageProps {
-  params: { id: string };
+  params: { parentId: string };
 }
 
 export default async function CompletePage({ params }: CompletePageProps) {
@@ -19,7 +19,7 @@ export default async function CompletePage({ params }: CompletePageProps) {
   }
 
   // 権限確認
-  if (user.id !== params.id) {
+  if (user.id !== params.parentId) {
     redirect('/unauthorized');
   }
 
@@ -44,13 +44,13 @@ export default async function CompletePage({ params }: CompletePageProps) {
             
             <div className="space-y-3">
               <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
-                <Link href={`/users/${params.id}/children/create`}>
+                <Link href={`/users/${params.parentId}/children/create`}>
                   子どもプロフィール登録へ
                 </Link>
               </Button>
               
               <Button asChild variant="outline" className="w-full">
-                <Link href={`/users/${params.id}`}>
+                <Link href={`/users/${params.parentId}`}>
                   プロフィール確認
                 </Link>
               </Button>

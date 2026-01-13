@@ -17,13 +17,13 @@ import { ChildrenFields } from '@/components/profile/children-fields';
 import { upsertUserProfile } from '@/lib/actions/profile';
 
 interface ProfileFormProps {
-  userId: string;
+  parentId: string;
   userEmail: string;
   initialData?: Partial<UserProfileFormInput>;
   mode: 'create' | 'edit';
 }
 
-export function ProfileForm({ userId, userEmail, initialData, mode }: ProfileFormProps) {
+export function ProfileForm({ parentId, userEmail, initialData, mode }: ProfileFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -45,7 +45,7 @@ export function ProfileForm({ userId, userEmail, initialData, mode }: ProfileFor
     try {
       setIsLoading(true);
       
-      const result = await upsertUserProfile(userId, data);
+      const result = await upsertUserProfile(parentId, data);
       
       if (result.success) {
         toast({
@@ -55,7 +55,7 @@ export function ProfileForm({ userId, userEmail, initialData, mode }: ProfileFor
         });
         //🚀 修正：モード別の遷移制御
         if (mode === 'create') {
-          router.push(`/users/${userId}/complete`);
+          router.push(`/users/${parentId}/complete`);
           router.refresh();
         } else {
         // 編集の場合は現在のページをリフレッシュしてAuthContextを更新
@@ -138,7 +138,7 @@ export function ProfileForm({ userId, userEmail, initialData, mode }: ProfileFor
                         <ImageUpload
                           value={field.value}
                           onChange={field.onChange}
-                          userId={userId}
+                          userId={parentId}
                           bucketName="profiles"
                         />
                       </FormControl>
