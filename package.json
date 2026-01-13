@@ -8,6 +8,8 @@
     "dev:localhost": "next dev -H localhost",
     "dev:check": "npm run typecheck && npm run lint",
     "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .next node_modules/.cache",
+    "fresh": "npm run clean && npm run dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -18,7 +20,7 @@
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.1.1",
+    "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-checkbox": "^1.3.2",
     "@radix-ui/react-dialog": "^1.1.14",
@@ -39,7 +41,7 @@
     "react": "^18",
     "react-day-picker": "^9.11.1",
     "react-dom": "^18",
-    "react-hook-form": "^7.60.0",
+    "react-hook-form": "^7.71.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.0.5"
