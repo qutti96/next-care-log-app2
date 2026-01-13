@@ -2,25 +2,33 @@
 
 import { createServerSupabase } from "@/lib/supabase-server"
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
-import { 
-  childProfileFormSchema
-} from "@/lib/validations/child-profile"
+// import { redirect } from "next/navigation"
+import { childProfileFormSchema } from "@/lib/validations/child-profile"
+import type { ChildFormData } from "@/types"
 
 export type ActionState = {
   error?: string
   success?: boolean
+  data?: {
+    id: string
+    name: string
+    birthday: string | null // nullの可能性も考慮
+    [key: string]: unknown
+  }
   fieldErrors?: Record<string, string[]>
 }
 
 /**
  * 子どもプロフィールの作成・更新
  * セキュリティ: 親子関係の二重チェック実装
+ * 
+ * @param formData - フォームから送信された型安全なデータ
+ * @param parentId - 保護者ID（URL由来）
+ * @param childId - 子どもID（編集時のみ）
  */
+
 export async function upsertChildProfile(
-  parentId: string,
-  prevState: ActionState,
-  formData: FormData
+  formData: ChildFormData & { parentId: string; id?: string }
 ): Promise<ActionState> {
   const supabase = createServerSupabase()
 
@@ -31,26 +39,14 @@ export async function upsertChildProfile(
       return { error: "認証が必要です。ログインしてください。" }
     }
 
-    // 2. 親子関係の厳格な検証（重要なセキュリティチェック）
-    if (user.id !== parentId) {
-      console.error(`権限エラー: user=${user.id}, parent=${parentId}`)
+    // 2. 親子関係の厳格な検証（URL改ざん防止）
+    if (user.id !== formData.parentId) {
+      console.error(`権限エラー: user=${user.id}, parent=${formData.parentId}`)
       return { error: "この操作を実行する権限がありません。" }
     }
 
-    // 3. フォームデータの抽出と型変換
-    const rawData = {
-      name: formData.get("name") as string,
-      nameKana: (formData.get("nameKana") as string) || "",
-      birthday: formData.get("birthday") as string,
-      classId: (formData.get("classId") as string) || null,
-      allergens: (formData.get("allergens") as string) || "",
-      milkAmount: (formData.get("milkAmount") as string) || "",
-      milkInterval: (formData.get("milkInterval") as string) || "",
-      photoUrl: (formData.get("photoUrl") as string) || null,
-    }
-
-    // 4. サーバーサイドバリデーション
-    const validatedFields = childProfileFormSchema.safeParse(rawData)
+    // 3. サーバーサイドバリデーション
+    const validatedFields = childProfileFormSchema.safeParse(formData)
 
     if (!validatedFields.success) {
       return {
@@ -59,45 +55,145 @@ export async function upsertChildProfile(
       }
     }
 
-    const { data } = validatedFields
+    const data = validatedFields.data
 
-    // 5. データベース保存用データ作成
+    // 4. データベース保存用データ作成（スキーマに完全準拠）
     const dbData = {
-      id: crypto.randomUUID(),
-      parent_id: parentId,
+      parent_id: formData.parentId,
       name: data.name,
       name_kana: data.nameKana || null,
-      birthday: data.birthday,
+      birthday: data.birthday, // 修正: 既にstring型なので変換不要
       class_id: data.classId || null,
       allergens: data.allergens || null,
-      milk_amount: data.milkAmount != null ? String(data.milkAmount) : null,
-      milk_interval: data.milkInterval != null ? String(data.milkInterval) : null,
+      // 🔥 一時対応: Supabase型定義との整合性のため文字列変換
+      milk_amount: data.milkAmount !== null ? String(data.milkAmount) : null,
+      milk_interval: data.milkInterval !== null ? String(data.milkInterval) : null,
       photo_url: data.photoUrl || null,
-      created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
 
-    // 6. データベース操作実行
-    const { error: dbError } = await supabase
-      .from("children")
-      .insert(dbData)
-      .select()
-      .single()
+    let result
 
-    if (dbError) {
-      console.error("データベースエラー:", dbError)
-      return { error: "プロフィールの保存に失敗しました。もう一度お試しください。" }
+    if (formData.id) {
+      // 5a. 更新処理（Edit）
+      const { data: updateResult, error: dbError } = await supabase
+        .from("children")
+        .update(dbData)
+        .eq("id", formData.id)
+        .eq("parent_id", user.id) // 二重チェック
+        .select()
+        .single()
+
+      if (dbError) {
+        console.error("データベースエラー:", dbError)
+        return { error: "プロフィールの更新に失敗しました。もう一度お試しください。" }
+      }
+
+      result = updateResult
+    } else {
+      // 5b. 新規作成（Create）
+      const { data: createResult, error: dbError } = await supabase
+        .from("children")
+        .insert({
+          ...dbData,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single()
+
+      if (dbError) {
+        console.error("データベースエラー:", dbError)
+        return { error: "プロフィールの作成に失敗しました。もう一度お試しください。" }
+      }
+
+      result = createResult
     }
 
-    // 7. キャッシュ更新
-    revalidatePath(`/users-children/${parentId}`)
-    revalidatePath(`/users/${parentId}`)
+    // 6. キャッシュ更新
+    revalidatePath(`/users/${user.id}`)
+    revalidatePath(`/users/${user.id}/children`)
+    revalidatePath(`/users-children/${result.id}`)
+
+    return { success: true, data: result }
 
   } catch (error) {
     console.error("予期しないエラー:", error)
     return { error: "予期しないエラーが発生しました。" }
   }
+}
 
-  // 8. 成功時のリダイレクト
-  redirect(`/users-children/${parentId}/complete`)
+/**
+ * 子どもプロフィールの取得
+ * セキュリティ: 親子関係の検証
+ */
+export async function getChildProfile(childId: string): Promise<ActionState> {
+  const supabase = createServerSupabase()
+
+  try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return { error: "認証が必要です。" }
+    }
+
+    const { data, error } = await supabase
+      .from("children")
+      .select(`
+        *,
+        classes:class_id (
+          id,
+          name
+        )
+      `)
+      .eq("id", childId)
+      .eq("parent_id", user.id) // セキュリティチェック
+      .single()
+
+    if (error) {
+      console.error("データ取得エラー:", error)
+      return { error: "データが見つかりません。" }
+    }
+
+    return { success: true, data }
+
+  } catch (error) {
+    console.error("予期しないエラー:", error)
+    return { error: "予期しないエラーが発生しました。" }
+  }
+}
+
+/**
+ * 子どもプロフィールの削除（ソフトデリート）
+ */
+export async function deleteChildProfile(childId: string): Promise<ActionState> {
+  const supabase = createServerSupabase()
+
+  try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return { error: "認証が必要です。" }
+    }
+
+    // ソフトデリート（deleted_atを設定）
+    const { error } = await supabase
+      .from("children")
+      .update({ 
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", childId)
+      .eq("parent_id", user.id) // セキュリティチェック
+
+    if (error) {
+      console.error("削除エラー:", error)
+      return { error: "削除に失敗しました。" }
+    }
+
+    revalidatePath(`/users/${user.id}`)
+    
+    return { success: true }
+
+  } catch (error) {
+    console.error("予期しないエラー:", error)
+    return { error: "予期しないエラーが発生しました。" }
+  }
 }

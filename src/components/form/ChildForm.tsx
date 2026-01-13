@@ -1,23 +1,43 @@
+'use client'
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   childFormSchema,
-  type ChildFormValues
+  type ChildFormData
 } from '@/lib/validations/child-profile';
+import { upsertChildProfile } from '@/lib/actions/child-profile';
 
 interface ChildFormProps {
-  onSubmit: (values: ChildFormValues) => void;
-  defaultValues?: Partial<ChildFormValues>;//編集モード対応
+  // 🔥 修正: 登録ページから渡されるPropsに完全一致
+  parentId: string;
+  defaultValues?: Partial<ChildFormData>;
+  classOptions: Array<{ value: string; label: string }>;
+  mode: 'create' | 'edit';
+  childId?: string; // edit時のみ
+
 }
 
-export function ChildForm({ onSubmit, defaultValues }: ChildFormProps) {
-  const form = useForm<ChildFormValues>({
+export function ChildForm({ 
+  parentId,
+  defaultValues,
+  classOptions,
+  mode,
+  childId
+}: ChildFormProps) {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<ChildFormData>({
     resolver: zodResolver(childFormSchema),
     // 🔑 重要: すべてのスキーマフィールドに対応する初期値を設定
     defaultValues: {
       name: defaultValues?.name || '',
       nameKana: defaultValues?.nameKana || '',
-      birthday: defaultValues?.birthday || '',
+      birthday: defaultValues?.birthday || '',// 🔥 修正: string型として扱う
       classId: defaultValues?.classId || '',
       allergens: defaultValues?.allergens || '',
       milkAmount: defaultValues?.milkAmount ?? null,
@@ -26,8 +46,54 @@ export function ChildForm({ onSubmit, defaultValues }: ChildFormProps) {
     },
   });
 
+  const handleSubmit = async(data: ChildFormData) => {
+    try {
+      setIsSubmitting(true);
+
+      const result = await upsertChildProfile({
+        ...data,
+        parentId,
+        id: childId,
+      });
+
+      if (result.error) {
+        
+        toast({
+          variant: "destructive",
+          title: result.error,
+        });
+        
+        if (result.fieldErrors) {
+          Object.entries(result.fieldErrors).forEach(([field, errors]) => {
+            form.setError(field as keyof ChildFormData, {
+              message: errors[0],
+            });
+          });
+        }
+        return;
+      }
+
+      toast({
+        title: mode === 'create'
+          ? 'お子さまのプロフィールを登録しました！'
+          : 'お子さまのプロフィールを更新しました！',
+      });
+
+      router.push(`/users-children/${result.data?.id}`);
+      router.refresh();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: 'エラーが発生しました。もう一度お試しください。',
+      });
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
       {/* お名前（必須） */}
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700">
@@ -84,33 +150,31 @@ export function ChildForm({ onSubmit, defaultValues }: ChildFormProps) {
         )}
       </div>
 
-      {/* クラスID（必須 - 既存API仕様に準拠） */}
+      {/* クラス選択 */}
       <div>
         <label htmlFor="classId" className="block text-sm font-medium text-gray-700">
-          所属クラス <span className="text-red-500">*</span>
+          所属クラス
         </label>
         <select
-        id="classId"
-        {...form.register('classId')}
-        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-  >
-        {/* ✅ 未所属選択肢を追加 */}
-        <option value="">クラス未所属</option>
-        <option value="class_0">0歳児クラス</option>
-        <option value="class_1">1歳児クラス</option>
-        <option value="class_2">2歳児クラス</option>
-        <option value="class_3">3歳児クラス</option>
-        <option value="class_4">4歳児クラス</option>
-        <option value="class_5">5歳児クラス</option>
-      </select>
-      {form.formState.errors.classId && (
-        <p className="mt-1 text-sm text-red-500">
-          {form.formState.errors.classId.message}
-        </p>
-      )}
-    </div>
+          id="classId"
+          {...form.register('classId')}
+          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+        >
+          <option value="">クラス未所属</option>
+          {classOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {form.formState.errors.classId && (
+          <p className="mt-1 text-sm text-red-500">
+            {form.formState.errors.classId.message}
+          </p>
+        )}
+      </div>
 
-      {/* アレルギー情報（任意） */}
+      {/* アレルギー情報 */}
       <div>
         <label htmlFor="allergens" className="block text-sm font-medium text-gray-700">
           アレルギー情報
@@ -129,7 +193,7 @@ export function ChildForm({ onSubmit, defaultValues }: ChildFormProps) {
         )}
       </div>
 
-      {/* ミルク情報（数値入力 + valueAsNumber */}
+      {/* ミルク情報 */}
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label htmlFor="milkAmount" className="block text-sm font-medium text-gray-700">
@@ -142,7 +206,7 @@ export function ChildForm({ onSubmit, defaultValues }: ChildFormProps) {
             step="1"
             min="1"
             max="500"
-            {...form.register('milkAmount',{valueAsNumber: true})} // valueAsNumberは不要（preprocessが処理）
+            {...form.register('milkAmount', { valueAsNumber: true })}
             className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
             placeholder="120"
           />
@@ -164,7 +228,7 @@ export function ChildForm({ onSubmit, defaultValues }: ChildFormProps) {
             step="0.5"
             min="0.5"
             max="24"
-            {...form.register('milkInterval',{valueAsNumber: true})}
+            {...form.register('milkInterval', { valueAsNumber: true })}
             className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
             placeholder="3.5"
           />
@@ -176,7 +240,7 @@ export function ChildForm({ onSubmit, defaultValues }: ChildFormProps) {
         </div>
       </div>
 
-      {/* 写真URL（任意） */}
+      {/* 写真URL */}
       <div>
         <label htmlFor="photoUrl" className="block text-sm font-medium text-gray-700">
           写真URL
@@ -199,12 +263,12 @@ export function ChildForm({ onSubmit, defaultValues }: ChildFormProps) {
       <div className="pt-4">
         <button 
           type="submit"
-          disabled={form.formState.isSubmitting}
+          disabled={isSubmitting}
           className="w-full bg-blue-600 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {form.formState.isSubmitting ? '登録中...' : '登録'}
+          {isSubmitting ? '送信中...' : mode === 'create' ? '登録' : '更新'}
         </button>
       </div>
     </form>
-  );
+    );
 }

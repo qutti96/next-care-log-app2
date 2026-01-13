@@ -22,15 +22,19 @@ type ChildInsert = Database['public']['Tables']['children']['Insert']
  * 型変換ヘルパー関数:フィールド名の変換と型安全性を一箇所で管理
  * ParentProfileFormValues → Supabase Insert形式に変換
  */
-function convertChildToSupabaseFormat(child: any, userId: string, timestamp: string): ChildInsert {
+function convertChildToSupabaseFormat(
+  child: ParentProfileFormValues['children'][number],
+  userId: string,
+  timestamp: string
+): ChildInsert {
   return {
     id: child.id || crypto.randomUUID(),
     parent_id: userId, // ✅ camelCase → snake_case 変換
     name: child.name,
     
-    // ✅ 数値型を適切に処理（PostgreSQLが自動キャスト）
-    milk_amount: typeof child.milkAmount === 'number' ? child.milkAmount : null,
-    milk_interval: typeof child.milkInterval === 'number' ? child.milkInterval : null,
+    // ✅ Supabaseの型定義（string | null）に合わせて文字列に変換
+    milk_amount: child.milkAmount != null ? String(child.milkAmount) : null,
+    milk_interval: child.milkInterval != null ? String(child.milkInterval) : null,
     
     updated_at: timestamp,
     // 条件付きフィールド
